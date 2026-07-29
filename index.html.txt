@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitoreo TA</title>
+  <style>
+    /* ============================================================ VARIABLES */
+    :root {
+      --c-primary:    #5C3D8F;
+      --c-primary-lt: #7B5AB5;
+      --c-primary-dk: #3D2860;
+      --c-accent:     #0ea5e9;
+      --c-low:    #3b82f6; --c-low-bg:  #eff6ff;
+      --c-ok:     #22c55e; --c-ok-bg:   #f0fdf4;
+      --c-elev:   #d97706; --c-elev-bg: #fefce8;
+      --c-s1:     #f97316; --c-s1-bg:   #fff7ed;
+      --c-s2:     #ef4444; --c-s2-bg:   #fef2f2;
+      --c-cri:    #991b1b; --c-cri-bg:  #fee2e2;
+      --c-bg:     #f1f5f9;
+      --c-surf:   #ffffff;
+      --c-border: #e2e8f0;
+      --c-text:   #1e293b;
+      --c-muted:  #64748b;
+      --c-head:   #0f172a;
+      --radius:    10px;
+      --radius-sm: 6px;
+      --shadow:    0 1px 6px rgba(0,0,0,0.07);
+      --shadow-md: 0 4px 18px rgba(0,0,0,0.11);
+    }
+    /* ============================================================ RESET */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--c-bg); color: var(--c-text); font-size: 14px; line-height: 1.6; }
+
+    /* ============================================================ HEADER */
+    .app-header { background: linear-gradient(135deg, var(--c-primary-dk) 0%, var(--c-primary) 60%, var(--c-primary-lt) 100%);
+      color: white; padding: 18px 24px 14px; }
+    .header-row { display: flex; align-items: center; gap: 12px; }
+    .header-icon { font-size: 30px; line-height: 1; }
+    .header-title { font-size: 20px; font-weight: 800; letter-spacing: -.4px; }
+    .header-sub { font-size: 11px; opacity: .8; margin-top: 1px; }
+    .badge-row { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .ev-badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 20px; padding: 2px 9px; font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+
+    /* ============================================================ LAYOUT */
+    .container { max-width: 940px; margin: 0 auto; padding: 14px 14px 28px; }
+
+    /* ============================================================ CARDS */
+    .card { background: var(--c-surf); border-radius: var(--radius); box-shadow: var(--shadow);
+      margin-bottom: 14px; overflow: hidden; }
+    .card-header { padding: 11px 16px; border-bottom: 1px solid var(--c-border);
+      display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 13px; color: var(--c-head); }
+    .card-header .ch-right { margin-left: auto; font-weight: 400; font-size: 10px; color: var(--c-muted); }
+    .card-body { padding: 14px 16px; }
+
+    /* ============================================================ CONFIG */
+    .config-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-group label { font-size: 10px; font-weight: 700; color: var(--c-muted);
+      text-transform: uppercase; letter-spacing: .5px; }
+    .form-group input, .form-group select { border: 1px solid var(--c-border); border-radius: var(--radius-sm);
+      padding: 7px 10px; font-size: 13px; color: var(--c-text); background: white;
+      transition: border-color .15s, box-shadow .15s; }
+    .form-group input:focus, .form-group select:focus { outline: none;
+      border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(92,61,143,.12); }
+
+    /* ============================================================ LEGEND */
+    .legend-strip { display: flex; flex-wrap: wrap; gap: 10px; padding: 10px 0 2px;
+      font-size: 11px; margin-top: 10px; }
+    .leg-item { display: flex; align-items: center; gap: 5px; }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ============================================================ TABLE */
+    .grid-scroll { overflow-x: auto; }
+    .bp-table { border-collapse: collapse; width: 100%; max-width: 480px; font-size: 12px; }
+    .bp-table th { background: var(--c-bg); font-size: 10px; font-weight: 700; color: var(--c-muted);
+      text-align: center; padding: 6px 4px; border: 1px solid var(--c-border); text-transform: uppercase; }
+    .bp-table td { padding: 3px 3px; border: 1px solid var(--c-border); vertical-align: middle; }
+    .td-day { font-size: 10px; color: var(--c-muted); text-align: center; padding: 0 4px; }
+    .bp-input { width: 50px; border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 5px;
+      font-size: 12px; text-align: center; background: white; transition: background .15s; }
+    .bp-input.bg-low  { background: var(--c-low-bg);  color: var(--c-low); }
+    .bp-input.bg-ok   { background: var(--c-ok-bg);   color: #15803d; }
+    .bp-input.bg-elev { background: var(--c-elev-bg); color: var(--c-elev); }
+    .bp-input.bg-s1   { background: var(--c-s1-bg);   color: #c2410c; }
+    .bp-input.bg-s2   { background: var(--c-s2-bg);   color: #b91c1c; }
+    .bp-input.bg-cri  { background: var(--c-cri-bg);  color: var(--c-cri); }
+    .bp-input:focus { outline: none; border-color: var(--c-primary); box-shadow: 0 0 0 2px rgba(92,61,143,.15); }
+    .fc-input { width: 42px; border: 1px solid var(--c-border); border-radius: 4px; padding: 4px 4px;
+      font-size: 12px; text-align: center; background: #fafafa; }
+    .fc-input:focus { outline: none; border-color: var(--c-primary); }
+    .avg-row td { background: #f5f3ff; border-top: 1px dashed #c4b5fd; }
+    .avg-label-cell { font-size: 10px; font-weight: 700; color: #7c3aed; text-align: center; padding: 3px 8px; letter-spacing:.3px; }
+    .avg-val { font-size: 13px; font-weight: 800; color: #5C3D8F; text-align: center; padding: 3px; }
+    .inv-error { outline: 2px solid #ef4444 !important; background: #fee2e2 !important; }
+    abbr { text-decoration: none; border-bottom: 1px dotted var(--c-muted); cursor: help; }
+    .glosario-box { font-size:10px; color:var(--c-muted); border:1px solid var(--c-border);
+      border-radius:var(--radius-sm); padding:6px 12px; background:var(--c-surf);
+      margin-top:8px; }
+    .glosario-box summary { cursor:pointer; font-weight:700; font-size:11px; color:var(--c-text);
+      user-select:none; list-style:none; display:flex; align-items:center; gap:6px; }
+    .glosario-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+      gap:2px 14px; margin-top:8px; }
+    .glosario-grid div { display:flex; gap:5px; padding:1px 0; }
+    .glosario-grid strong { min-width:54px; color:var(--c-primary); font-size:10px; }
+    .glosario-grid span { color:var(--c-muted); font-size:10px; }
+    .pam-cell { font-size:12px; font-weight:700; color:#0369a1; text-align:center; padding:3px; background:#f0f9ff; }
+    .pam-avg  { font-size:13px; font-weight:800; color:#0369a1; text-align:center; padding:3px; }
+    .pc-pam   { font-size:12px; color:#0369a1; font-weight:700; margin-top:2px; }
+
+    /* ============================================================ ACTIONS */
+    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; padding: 14px 0 4px; }
+    .btn { border: none; border-radius: var(--radius-sm); padding: 9px 18px; font-size: 13px;
+      font-weight: 600; cursor: pointer; transition: opacity .15s, transform .1s; }
+    .btn:active { transform: scale(.97); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .btn-primary { background: var(--c-primary); color: white; }
+    .btn-secondary { background: var(--c-border); color: var(--c-text); }
+    .btn-danger { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .btn-success { background: var(--c-ok-bg); color: #15803d; border: 1px solid #bbf7d0; }
+    .btn:hover:not(:disabled) { opacity: .88; }
+
+    /* ============================================================ RESULTS SHARED */
+    .sec-title { font-size: 12px; font-weight: 700; color: var(--c-muted); text-transform: uppercase;
+      letter-spacing: .5px; margin-bottom: 10px; }
+
+    /* ============================================================ DUAL CLASSIFICATION */
+    .dual-class-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .dc-item { border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 10px 12px;
+      text-align: center; background: var(--c-bg); }
+    .dc-src { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+      color: var(--c-muted); margin-bottom: 4px; }
+    .dc-val { font-size: 15px; font-weight: 800; margin-bottom: 3px; }
+    .dc-sub { font-size: 10px; color: var(--c-muted); }
+    .dc-note { font-size: 10px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: var(--radius-sm); padding: 7px 10px; margin-top: 8px; line-height:1.5; }
+    details.dc-item summary { cursor: pointer; list-style: none; }
+    details.dc-item summary::-webkit-details-marker { display: none; }
+    details.dc-item summary::marker { content: ''; }
+    .dc-hint { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700;
+      color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 20px;
+      padding: 2px 9px; margin-top: 7px; }
+    .dc-hint::before { content: '▸'; font-size: 8px; transition: transform .15s; }
+    details.dc-item[open] .dc-hint::before { transform: rotate(90deg); }
+    .dc-detail { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--c-border);
+      font-size: 10px; color: var(--c-muted); text-align: left; line-height: 1.6; }
+    .dc-detail strong { color: var(--c-text); }
+
+    /* ============================================================ AHA STRIP */
+    .aha-strip { display: flex; border-radius: var(--radius-sm); overflow: hidden; height: 28px;
+      margin: 10px 0 8px; }
+    .aha-seg { flex: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: white; opacity: .85; position: relative; cursor: default; }
+    .aha-seg.active { opacity: 1; box-shadow: inset 0 0 0 2px rgba(0,0,0,.35); }
+
+    /* ============================================================ PERIOD CARDS */
+    .period-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .pc { border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 10px;
+      text-align: center; }
+    .pc-icon { font-size: 16px; }
+    .pc-label { font-size: 10px; color: var(--c-muted); font-weight: 600; margin: 2px 0; }
+    .pc-sbp { font-size: 22px; font-weight: 800; color: var(--c-primary); }
+    .pc-dbp { font-size: 14px; color: var(--c-muted); }
+    .pc-fc { font-size: 11px; color: var(--c-muted); }
+    .pc-n { font-size: 10px; color: var(--c-muted); margin-top: 3px; }
+    .overall-banner { border-radius: var(--radius-sm); padding: 12px 16px; margin-top: 4px;
+      text-align: center; }
+    .ob-val { font-size: 28px; font-weight: 900; letter-spacing: -.5px; }
+    .ob-label { font-size: 13px; font-weight: 700; margin-top: 2px; }
+    .ob-src { font-size: 10px; opacity: .75; margin-top: 2px; }
+
+    /* ============================================================ DISTRIBUCIÓN */
+    .tir-stacked { height: 18px; border-radius: 9px; overflow: hidden; display: flex; margin: 8px 0; }
+    .tir-seg { height: 100%; transition: width .4s; }
+    .tir-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 11px; }
+    .tir-lbl { width: 100px; font-weight: 600; }
+    .tir-bar-wrap { flex: 1; background: var(--c-border); border-radius: 4px; height: 6px; overflow: hidden; }
+    .tir-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+    .tir-pct { width: 38px; text-align: right; font-weight: 700; }
+    .tir-n { width: 30px; color: var(--c-muted); font-size: 10px; }
+
+    /* ============================================================ QUALITY */
+    .quality-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+      border-radius: var(--radius-sm); border: 1px solid; }
+    .quality-icon { font-size: 20px; }
+    .quality-label { font-weight: 700; font-size: 14px; }
+    .quality-note { font-size: 11px; color: var(--c-muted); }
+    .quality-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+    .qm-box { text-align: center; padding: 8px; background: var(--c-bg);
+      border-radius: var(--radius-sm); font-size: 11px; }
+    .qm-val { font-size: 18px; font-weight: 800; color: var(--c-primary); }
+
+    /* ============================================================ CIRCADIAN */
+    .pat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+    .pat-card { border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 11px 12px; }
+    .pat-label { font-size: 10px; font-weight: 700; color: var(--c-muted); text-transform: uppercase;
+      letter-spacing: .4px; margin-bottom: 5px; }
+    .pat-value { font-size: 20px; font-weight: 800; }
+    .pat-note  { font-size: 10px; color: var(--c-muted); margin-top: 4px; line-height: 1.4; }
+    .pat-disclaimer { font-size: 10px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: var(--radius-sm); padding: 7px 10px; margin-top: 10px; }
+
+    /* ============================================================ VARIABILITY */
+    .metric-box { border: 1px solid var(--c-border); border-radius: var(--radius-sm); padding: 10px 8px;
+      text-align: center; }
+    .mx-label { font-size: 10px; color: var(--c-muted); font-weight: 600; margin-bottom: 3px; }
+    .mx-value { font-weight: 700; }
+    .mx-note  { font-size: 10px; color: var(--c-muted); margin-top: 3px; }
+
+    /* ============================================================ INTERPRETATION */
+    .sect-interpretation ul { list-style: none; padding: 0; }
+    .sect-interpretation li { padding: 8px 10px; margin-bottom: 6px; border-radius: var(--radius-sm);
+      background: var(--c-bg); font-size: 12px; line-height: 1.6; }
+    .alert-box { border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px;
+      font-size: 12px; line-height: 1.6; }
+    .alert-crisis { background: var(--c-cri-bg); border-left: 4px solid var(--c-cri); }
+    .alert-warn   { background: var(--c-s1-bg);  border-left: 4px solid var(--c-s1); }
+    .alert-info   { background: var(--c-low-bg);  border-left: 4px solid var(--c-low); }
+    .alert-note   { background: var(--c-elev-bg); border-left: 4px solid var(--c-elev); }
+
+    /* ============================================================ BADGES */
+    .bd-low  { background:var(--c-low-bg);  color:var(--c-low);  border:1px solid; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700; }
+    .bd-ok   { background:var(--c-ok-bg);   color:#15803d; border:1px solid; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700; }
+    .bd-elev { background:var(--c-elev-bg); color:var(--c-elev); border:1px solid; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700; }
+    .bd-s1   { background:var(--c-s1-bg);   color:#c2410c; border:1px solid; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700; }
+    .bd-s2   { background:var(--c-s2-bg);   color:#b91c1c; border:1px solid; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700; }
+    .bd-cri  { background:var(--c-cri-bg);  color:var(--c-cri); border:1px solid; border-radius:4px; padding:1px 6px; font-size:10px; font-weight:700; }
+
+    /* ============================================================ PRINT */
+    @media print {
+      .no-print { display: none !important; }
+      .card { box-shadow: none; border: 1px solid #ddd; break-inside: avoid; }
+      body { background: white; font-size: 11px; }
+    }
+    @media (max-width: 600px) {
+      .dual-class-grid { grid-template-columns: 1fr; }
+      .period-cards { grid-template-columns: 1fr; }
+      .quality-metrics { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ============================================================ HEADER -->
+<header class="app-header">
+  <div class="header-row">
+    <div class="header-icon">🩺</div>
+    <div>
+      <div class="header-title">TensioLAB v2.1 — Monitoreo TA</div>
+      <div class="header-sub">Registro domiciliario · apoyo a la decisión en primer nivel</div>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ============================================================ CONFIG -->
+  <div class="card">
+    <div class="card-header">⚙️ Configuración</div>
+    <div class="card-body">
+      <div class="config-grid">
+        <div class="form-group">
+          <label>Días de registro</label>
+          <select id="cfg-days">
+            <option value="7">7 días — diagnóstico inicial</option>
+            <option value="10">10 días — control / ajuste complejo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Perfil / Meta terapéutica</label>
+          <select id="cfg-profile">
+            <option value="nom_general">NOM-030 general &lt;140/90</option>
+            <option value="nom_inten">NOM-030 intensificada &lt;130/80 (DM/ERC/ECV)</option>
+            <option value="aha_general">AHA/ACC 2025 general &lt;130/80</option>
+            <option value="dm">DM2 &lt;130/80 (ADA 2025-2026)</option>
+            <option value="erc">ERC &lt;130/80 (meta práctica; KDIGO 2024 sugiere &lt;120)</option>
+            <option value="mayor65">≥65 años &lt;130/80 (AHA/ACC 2025)</option>
+            <option value="mayor80">≥80 años &lt;150/90 (HYVET)</option>
+            <option value="embarazo">Embarazo &lt;140/90 (CHAP/ACOG 2022)</option>
+          </select>
+          <div id="profile-preview" style="font-size:10px;color:var(--c-muted);margin-top:2px;line-height:1.4;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ TABLE -->
+  <div class="card">
+    <div class="card-header">
+      📋 Registro de Tensiones
+      <span class="ch-right">SIS / DIA en mmHg · FC en lpm · <strong>Enter</strong> avanza al siguiente campo</span>
+    </div>
+    <div class="card-body" style="padding:10px 12px 14px;">
+      <div class="grid-scroll">
+        <table class="bp-table" id="bp-table">
+          <thead>
+            <tr>
+              <th style="min-width:70px;text-align:center;">Día</th>
+              <th style="min-width:80px;">Horario</th>
+              <th style="min-width:55px;text-align:center;"><abbr title="Presión Sistólica (mmHg)">SIS</abbr></th>
+              <th style="min-width:55px;text-align:center;"><abbr title="Presión Diastólica (mmHg)">DIA</abbr></th>
+              <th style="min-width:48px;text-align:center;"><abbr title="Frecuencia Cardíaca (lpm)">FC</abbr></th>
+              <th style="min-width:48px;text-align:center;color:#0369a1;"><abbr title="Presión Arterial Media = DIA + (SIS−DIA)/3">PAM</abbr></th>
+            </tr>
+          </thead>
+          <tbody id="bp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ LEGEND + ACTIONS -->
+  <div class="legend-strip no-print">
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-low)"></div>Hipotensión &lt;90/60</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-ok)"></div>Normal/Óptima</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-elev)"></div>Elevada</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-s1)"></div>HTA Grado 1*</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-s2)"></div>HTA Grado 2</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-cri)"></div>Crisis</div>
+    <div style="font-size:10px;color:var(--c-muted);margin-left:auto;">*umbral domiciliario ESH 2023 ≥135/85</div>
+  </div>
+
+  <div class="action-bar no-print">
+    <button class="btn btn-primary" id="btn-calc">🔢 Calcular</button>
+    <button class="btn btn-success" id="btn-save">💾 Guardar</button>
+    <button class="btn btn-secondary" id="btn-load">📂 Cargar</button>
+    <button class="btn btn-secondary" id="btn-print">🖨️ Imprimir</button>
+    <button class="btn btn-secondary" id="btn-patient">📄 Hoja Paciente</button>
+    <button class="btn btn-danger" id="btn-clear">🗑️ Limpiar</button>
+  </div>
+
+  <!-- ============================================================ RESULTS -->
+  <div id="results-section" style="display:none;">
+
+    <!-- Clasificación dual -->
+    <div class="card">
+      <div class="card-header">📊 Clasificación del Promedio Global</div>
+      <div class="card-body">
+        <div id="sect-dual-class"></div>
+        <div id="sect-banner"></div>
+        <div id="sect-aha-strip"></div>
+      </div>
+    </div>
+
+    <!-- Calidad del registro -->
+    <div class="card">
+      <div class="card-header">✅ Calidad del Registro</div>
+      <div class="card-body" id="sect-quality"></div>
+    </div>
+
+    <!-- Promedios por horario -->
+    <div class="card">
+      <div class="card-header">⏱️ Promedios por Horario</div>
+      <div class="card-body" id="sect-periods"></div>
+    </div>
+
+    <!-- Distribución -->
+    <div class="card">
+      <div class="card-header">📊 Distribución de Lecturas y Carga Tensional</div>
+      <div class="card-body" id="sect-ttr"></div>
+    </div>
+
+    <!-- Patrón circadiano -->
+    <div class="card">
+      <div class="card-header">🌙 Patrón Circadiano · Surge · Presión de Pulso</div>
+      <div class="card-body">
+        <div id="sect-pattern"></div>
+      </div>
+    </div>
+
+    <!-- Supuestos e inferencias -->
+    <div class="card">
+      <div class="card-header">⚠️ Supuestos, Inferencias y Sesgos Posibles</div>
+      <div class="card-body" id="sect-bias"></div>
+    </div>
+
+    <!-- Interpretación -->
+    <div class="card">
+      <div class="card-header">🩺 Interpretación Clínica</div>
+      <div class="card-body">
+        <div id="sect-alerts"></div>
+        <div class="sect-interpretation" id="sect-interpretation"></div>
+      </div>
+    </div>
+
+  </div><!-- /results -->
+
+  <!-- GLOSARIO -->
+  <details class="glosario-box no-print">
+    <summary>📖 Glosario de abreviaturas ▸</summary>
+    <div class="glosario-grid">
+      <div><strong>SIS</strong><span>— Presión Sistólica</span></div>
+      <div><strong>DIA</strong><span>— Presión Diastólica</span></div>
+      <div><strong>PAM</strong><span>— Presión Arterial Media = DIA + (SIS−DIA)/3</span></div>
+      <div><strong>FC</strong><span>— Frecuencia Cardíaca</span></div>
+      <div><strong>mmHg</strong><span>— Milímetros de Mercurio</span></div>
+      <div><strong>lpm</strong><span>— Latidos por Minuto</span></div>
+      <div><strong>PP</strong><span>— Presión de Pulso = SIS − DIA</span></div>
+      <div><strong>DS</strong><span>— Desviación Estándar</span></div>
+      <div><strong>CV</strong><span>— Coeficiente de Variación</span></div>
+      <div><strong>HTA</strong><span>— Hipertensión Arterial</span></div>
+      <div><strong>HBPM</strong><span>— Home Blood Pressure Monitoring — monitoreo domiciliario</span></div>
+      <div><strong>MAPA</strong><span>— Monitoreo Ambulatorio de Presión Arterial 24h</span></div>
+      <div><strong>NOM</strong><span>— Norma Oficial Mexicana</span></div>
+      <div><strong>GPC</strong><span>— Guía de Práctica Clínica</span></div>
+      <div><strong>AHA</strong><span>— American Heart Association</span></div>
+      <div><strong>ACC</strong><span>— American College of Cardiology</span></div>
+      <div><strong>ESH</strong><span>— European Society of Hypertension</span></div>
+      <div><strong>ACOG</strong><span>— American College of Obstetricians and Gynecologists</span></div>
+      <div><strong>SMFM</strong><span>— Society for Maternal-Fetal Medicine</span></div>
+      <div><strong>CHAP</strong><span>— Chronic Hypertension and Pregnancy (ensayo clínico 2022)</span></div>
+      <div><strong>KDIGO</strong><span>— Kidney Disease: Improving Global Outcomes</span></div>
+      <div><strong>ADA</strong><span>— American Diabetes Association</span></div>
+      <div><strong>PREVENT</strong><span>— Predicting Risk of CVD Events (calculadora de riesgo AHA)</span></div>
+      <div><strong>HYVET</strong><span>— Hypertension in the Very Elderly Trial</span></div>
+      <div><strong>IECA</strong><span>— Inhibidor de la Enzima Convertidora de Angiotensina</span></div>
+      <div><strong>ARA-II</strong><span>— Antagonista del Receptor de Angiotensina II</span></div>
+      <div><strong>CCB</strong><span>— Calcioantagonista — Calcium Channel Blocker</span></div>
+      <div><strong>ECV</strong><span>— Enfermedad Cardiovascular</span></div>
+      <div><strong>ERC</strong><span>— Enfermedad Renal Crónica</span></div>
+      <div><strong>DM2</strong><span>— Diabetes Mellitus tipo 2</span></div>
+      <div><strong>HVI</strong><span>— Hipertrofia Ventricular Izquierda</span></div>
+      <div><strong>ASCVD</strong><span>— Atherosclerotic Cardiovascular Disease — Enfermedad CV Aterosclerótica</span></div>
+    </div>
+  </details>
+
+</div><!-- /container -->
+
+<script>
+'use strict';
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+const PERIODS = ['manana', 'tarde', 'noche'];
+const PERIOD_META = {
+  manana: { icon: '🌅', short: 'Mañana' },
+  tarde:  { icon: '☀️', short: 'Tarde'  },
+  noche:  { icon: '🌙', short: 'Noche'  },
+};
+
+// Umbral domiciliario único (HBPM). Esta app siempre registra en casa,
+// por lo que se usa un solo umbral en vez de un selector de contexto.
+const HOME_THRESHOLD = { sbp: 135, dbp: 85, source: 'ESH 2023 / ISH 2020' };
+
+// Metas terapéuticas por perfil clínico
+const TARGETS = {
+  nom_general: { sbp: 140, dbp: 90, source: 'NOM-030-SSA2-2009',
+    label: 'General NOM-030 <140/90',
+    note: 'Meta básica NOM-030 sin comorbilidades mayores en primer nivel IMSS/SSA.' },
+  nom_inten: { sbp: 130, dbp: 80, source: 'NOM-030-SSA2 · ADA 2025-2026',
+    label: 'NOM-030 intensificada <130/80',
+    note: 'DM, ERC o ECV establecida según NOM-030; alineada con ADA 2025-2026.' },
+  aha_general: { sbp: 130, dbp: 80, source: '2025 AHA/ACC Multisociety Guideline',
+    label: 'AHA/ACC 2025 general <130/80',
+    note: 'Mantiene las categorías de 2017. Meta <130/80; considerar <120 si se logra con seguridad, sobre todo con riesgo CV o renal alto. Iniciar/intensificar en Etapa 1 si PREVENT ≥7.5%, ECV clínica, DM o ERC.' },
+  dm: { sbp: 130, dbp: 80, source: 'ADA Standards of Care 2025-2026 · NOM-030-SSA2',
+    label: 'DM2 <130/80',
+    note: 'Meta <130/80 si se logra con seguridad; considerar SBP<120 en alto riesgo CV o renal. Meta más laxa <140/90 aceptable en fragilidad o alto riesgo de efectos adversos.' },
+  erc: { sbp: 130, dbp: 80, source: 'Meta práctica · KDIGO 2024',
+    label: 'ERC <130/80',
+    note: 'KDIGO 2024 sugiere SBP<120 mmHg con medición estandarizada de consultorio (evidencia 2B, cuando se tolera), basado sobre todo en el subgrupo renal de SPRINT; es una recomendación aún debatida. En HBPM no estandarizada, <130/80 es una meta práctica más conservadora, individualizando en adultos mayores o frágiles por riesgo de hipotensión y lesión renal aguda.' },
+  mayor65: { sbp: 130, dbp: 80, source: 'AHA/ACC 2025 · SPRINT',
+    label: '≥65 años <130/80',
+    note: 'Aplicar si cognitivamente apto y no frágil. ESH 2023: individualizar. Evitar hipotensión.' },
+  mayor80: { sbp: 150, dbp: 90, source: 'HYVET · ESH 2023',
+    label: '≥80 años <150/90',
+    note: 'ESH 2023 sugiere <140/90 si tolera. Prioritario evitar hipotensión ortostática y caídas.' },
+  embarazo: { sbp: 140, dbp: 90, source: 'ACOG/SMFM 2022 (CHAP) · NOM-007-SSA2-2016',
+    label: 'Embarazo <140/90',
+    note: 'El ensayo CHAP (NEJM 2022) mostró que tratar la HTA crónica leve a meta <140/90 reduce el desenlace compuesto (preeclampsia con datos de severidad, parto pretérmino indicado, desprendimiento, muerte fetal/neonatal) sin restricción del crecimiento fetal; NNT≈15. La HTA severa (≥160/110) requiere manejo antihipertensivo urgente para salir del rango de crisis — no es un descenso programado a <130/80.' },
+};
+
+// Categorías de clasificación por lectura (coloreado de la tabla y conteos)
+const BP_CATS = {
+  crisis: { level:'crisis', label:'Crisis HTA',    color:'#991b1b', bg:'#fee2e2', inputCls:'bg-cri', badge:'bd-cri' },
+  g2:     { level:'g2',    label:'HTA Grado 2',   color:'#ef4444', bg:'#fef2f2', inputCls:'bg-s2',  badge:'bd-s2'  },
+  g1:     { level:'g1',    label:'HTA',           color:'#f97316', bg:'#fff7ed', inputCls:'bg-s1',  badge:'bd-s1'  },
+  elev:   { level:'elev',  label:'Elevada',       color:'#d97706', bg:'#fefce8', inputCls:'bg-elev',badge:'bd-elev'},
+  normal: { level:'normal',label:'Normal/Óptima', color:'#15803d', bg:'#f0fdf4', inputCls:'bg-ok',  badge:'bd-ok'  },
+  low:    { level:'low',   label:'Hipotensión',   color:'#1d4ed8', bg:'#eff6ff', inputCls:'bg-low', badge:'bd-low' },
+};
+
+/* ============================================================
+   CLASSIFICATION FUNCTIONS
+============================================================ */
+// Coloreado por lectura individual (umbral domiciliario ESH 2023)
+function classifyReading(sbp, dbp) {
+  if (sbp === null || dbp === null || isNaN(sbp) || isNaN(dbp)) return null;
+  if (sbp > 180 || dbp > 120) return BP_CATS.crisis;
+  if (sbp < 90  || dbp < 60 ) return BP_CATS.low;
+  if (sbp >= 160 || dbp >= 100) return BP_CATS.g2;
+  if (sbp >= HOME_THRESHOLD.sbp || dbp >= HOME_THRESHOLD.dbp) return BP_CATS.g1;
+  if (sbp >= 120 || dbp >= 80) return BP_CATS.elev;
+  return BP_CATS.normal;
+}
+
+// NOM-030-SSA2-2009 (criterio de consultorio, mostrado como referencia comparativa)
+function classifyNOM030(sbp, dbp) {
+  if (isNaN(sbp) || isNaN(dbp)) return null;
+  if (sbp > 180 || dbp > 110) return { label:'HTA Grado 3', color:'#991b1b', sub:'≥180 o >110 mmHg' };
+  if (sbp >= 160 || dbp >= 100) return { label:'HTA Grado 2', color:'#ef4444', sub:'160–179 o 100–109' };
+  if (sbp >= 140 || dbp >= 90)  return { label:'HTA Grado 1', color:'#f97316', sub:'140–159 o 90–99' };
+  if (sbp >= 130 || dbp >= 85)  return { label:'Fronteriza',  color:'#d97706', sub:'130–139 o 85–89' };
+  if (sbp < 90  || dbp < 60 )  return { label:'Hipotensión', color:'#1d4ed8', sub:'<90/60 mmHg' };
+  return { label:'Normal', color:'#15803d', sub:'<130/85 mmHg' };
+}
+
+// AHA/ACC 2025 (criterio de consultorio; mantiene categorías 2017)
+function classifyAHA2025(sbp, dbp) {
+  if (isNaN(sbp) || isNaN(dbp)) return null;
+  if (sbp > 180 || dbp > 120) return { label:'Crisis HTA',  color:'#991b1b', sub:'>180 o >120 mmHg' };
+  if (sbp >= 140 || dbp >= 90) return { label:'HTA Etapa 2', color:'#ef4444', sub:'≥140 o ≥90 mmHg' };
+  if (sbp >= 130 || dbp >= 80) return { label:'HTA Etapa 1', color:'#f97316', sub:'130–139 o 80–89' };
+  if (sbp >= 120 && dbp < 80 ) return { label:'PA Elevada',  color:'#d97706', sub:'120–129 y <80' };
+  if (sbp < 90  || dbp < 60 ) return { label:'Hipotensión', color:'#1d4ed8', sub:'<90/60 mmHg' };
+  return { label:'Normal', color:'#15803d', sub:'<120/80 mmHg' };
+}
+
+// ESH 2023 — umbral domiciliario (el apropiado para HBPM)
+function classifyESHHome(sbp, dbp) {
+  if (isNaN(sbp) || isNaN(dbp)) return null;
+  if (sbp > 180 || dbp > 120) return { label:'Crisis HTA',     color:'#991b1b', sub:'>180 o >120 mmHg' };
+  if (sbp >= 160 || dbp >= 100) return { label:'HTA Grado 2',  color:'#ef4444', sub:'≥160 o ≥100' };
+  if (sbp >= 135 || dbp >= 85)  return { label:'HTA domiciliaria', color:'#f97316', sub:'≥135 o ≥85 mmHg' };
+  if (sbp >= 120 || dbp >= 80)  return { label:'Normal-alta',  color:'#d97706', sub:'120–134 o 80–84' };
+  if (sbp < 90  || dbp < 60 )  return { label:'Hipotensión',  color:'#1d4ed8', sub:'<90/60 mmHg' };
+  return { label:'Óptima', color:'#15803d', sub:'<120/80 mmHg' };
+}
+
+/* ============================================================
+   HELPERS
+============================================================ */
+function getDays() {
+  const s = document.getElementById('cfg-days');
+  return s ? (parseInt(s.value) || 7) : 7;
+}
+function getProfile() {
+  const s = document.getElementById('cfg-profile');
+  return s ? s.value || 'nom_general' : 'nom_general';
+}
+function updateProfilePreview() {
+  const el = document.getElementById('profile-preview');
+  if (!el) return;
+  const t = TARGETS[getProfile()] || TARGETS.nom_general;
+  el.textContent = `Meta activa: <${t.sbp}/${t.dbp} mmHg — ${t.source}`;
+}
+function fmt(v, d = 0) {
+  return (v === null || v === undefined || isNaN(v)) ? '—' : Number(v).toFixed(d);
+}
+function mean(arr) {
+  const v = arr.filter(x => x !== null && !isNaN(x));
+  if (!v.length) return null;
+  return v.reduce((a, b) => a + b, 0) / v.length;
+}
+function sd(arr) {
+  const v = arr.filter(x => x !== null && !isNaN(x));
+  if (v.length < 2) return null;
+  const m = mean(v);
+  return Math.sqrt(v.reduce((acc, x) => acc + (x - m) ** 2, 0) / (v.length - 1));
+}
+
+/* ============================================================
+   TABLE BUILDER
+============================================================ */
+function buildTable() {
+  const tbody = document.getElementById('bp-tbody');
+  if (!tbody) return;
+  const DAYS = getDays();
+  tbody.innerHTML = '';
+
+  for (let day = 0; day < DAYS; day++) {
+    PERIODS.forEach((period, pi) => {
+      const tr = document.createElement('tr');
+
+      // Columna "Día" con rowspan=4 (3 horarios + 1 media), solo primera fila
+      if (pi === 0) {
+        const tdDay = document.createElement('td');
+        tdDay.rowSpan = 4;
+        tdDay.className = 'td-day';
+        tdDay.style.cssText = 'vertical-align:middle;text-align:center;border-right:2px solid var(--c-border);padding:4px 8px;';
+        if (day === 0) tdDay.style.cssText += 'border-left:3px solid var(--c-accent);';
+        tdDay.innerHTML = `<strong style="font-size:13px;">D${day + 1}</strong>`;
+        tr.appendChild(tdDay);
+      }
+
+      const tdPer = document.createElement('td');
+      tdPer.style.cssText = 'font-size:11px;font-weight:600;padding:3px 10px;white-space:nowrap;color:var(--c-muted);';
+      tdPer.textContent = `${PERIOD_META[period].icon} ${PERIOD_META[period].short}`;
+      tr.appendChild(tdPer);
+
+      tr.appendChild(makeBPCell(day, period, true));
+      tr.appendChild(makeBPCell(day, period, false));
+      const fcTd = document.createElement('td');
+      fcTd.style.textAlign = 'center';
+      const fcIn = document.createElement('input');
+      fcIn.type = 'number'; fcIn.min = '30'; fcIn.max = '250';
+      fcIn.id = `fc_${day}_${period}`;
+      fcIn.className = 'fc-input'; fcIn.placeholder = '—';
+      fcTd.appendChild(fcIn);
+      tr.appendChild(fcTd);
+      // PAM por lectura (solo lectura, calculada en onBPInput)
+      const pamTd = document.createElement('td');
+      pamTd.className = 'pam-cell';
+      pamTd.id = `pam_${day}_${period}`;
+      pamTd.textContent = '—';
+      tr.appendChild(pamTd);
+
+      tbody.appendChild(tr);
+    });
+
+    // Fila de media diaria (solo lectura)
+    const trAvg = document.createElement('tr');
+    trAvg.className = 'avg-row';
+    trAvg.style.borderBottom = '2px solid var(--c-border)';
+    const tdAvgLbl = document.createElement('td');
+    tdAvgLbl.className = 'avg-label-cell';
+    tdAvgLbl.textContent = '📊 Media';
+    trAvg.appendChild(tdAvgLbl);
+    ['sbp','dbp','fc','pam'].forEach(type => {
+      const td = document.createElement('td');
+      td.className = type === 'pam' ? 'pam-avg' : 'avg-val';
+      td.id = `avg_${type}_${day}`;
+      td.textContent = '—';
+      trAvg.appendChild(td);
+    });
+    tbody.appendChild(trAvg);
+  }
+  attachInputListeners();
+  attachAutoAdvance();
+}
+
+function makeBPCell(day, period, isSbp = true) {
+  const td = document.createElement('td');
+  td.style.textAlign = 'center';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = isSbp ? '60' : '40';
+  input.max = isSbp ? '280' : '160';
+  input.id = (isSbp ? 'sbp' : 'dbp') + `_${day}_${period}`;
+  input.dataset.day = day; input.dataset.period = period; input.dataset.type = isSbp ? 'sbp' : 'dbp';
+  input.className = 'bp-input'; input.placeholder = '—';
+  td.appendChild(input);
+  return td;
+}
+
+function attachInputListeners() {
+  document.querySelectorAll('.bp-input').forEach(el => {
+    el.addEventListener('input', onBPInput);
+  });
+}
+
+function attachAutoAdvance() {
+  const DAYS = getDays();
+  const order = [];
+  for (let day = 0; day < DAYS; day++) {
+    for (const period of PERIODS) {
+      order.push(`sbp_${day}_${period}`);
+      order.push(`dbp_${day}_${period}`);
+      order.push(`fc_${day}_${period}`);
+    }
+  }
+  order.forEach((id, idx) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const advance = () => {
+      const next = document.getElementById(order[idx + 1]);
+      if (next) { next.focus(); next.select(); }
+    };
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); advance(); }
+    });
+    el.addEventListener('input', () => {
+      const val = el.value;
+      if (!val) return;
+      const isSbp = id.startsWith('sbp');
+      if (isSbp && val.length >= 3) advance();
+      else if (!isSbp && val.length >= 2 && parseInt(val) >= 30) advance();
+    });
+  });
+}
+
+function onBPInput(e) {
+  const { day, period } = e.target.dataset;
+  const sbpEl = document.getElementById(`sbp_${day}_${period}`);
+  const dbpEl = document.getElementById(`dbp_${day}_${period}`);
+  const sbp = parseFloat(sbpEl?.value);
+  const dbp = parseFloat(dbpEl?.value);
+  const cls = ['bg-low','bg-ok','bg-elev','bg-s1','bg-s2','bg-cri','inv-error'];
+  if (sbpEl) sbpEl.classList.remove(...cls);
+  if (dbpEl) dbpEl.classList.remove(...cls);
+  if (!isNaN(sbp) && !isNaN(dbp)) {
+    if (dbp >= sbp) {
+      sbpEl?.classList.add('inv-error');
+      dbpEl?.classList.add('inv-error');
+    } else {
+      const col = classifyReading(sbp, dbp);
+      if (col) { sbpEl?.classList.add(col.inputCls); dbpEl?.classList.add(col.inputCls); }
+    }
+  }
+  const pamEl = document.getElementById(`pam_${day}_${period}`);
+  if (pamEl) {
+    if (!isNaN(sbp) && !isNaN(dbp) && dbp < sbp) {
+      pamEl.textContent = Math.round(dbp + (sbp - dbp) / 3);
+    } else {
+      pamEl.textContent = '—';
+    }
+  }
+  updateDayAvg(parseInt(day));
+}
+
+function updateDayAvg(day) {
+  const vals = { sbp:[], dbp:[], fc:[] };
+  PERIODS.forEach(p => {
+    const s = parseFloat(document.getElementById(`sbp_${day}_${p}`)?.value);
+    const d = parseFloat(document.getElementById(`dbp_${day}_${p}`)?.value);
+    const f = parseFloat(document.getElementById(`fc_${day}_${p}`)?.value);
+    if (!isNaN(s) && !isNaN(d) && d < s && s >= 60 && d >= 40) {
+      vals.sbp.push(s); vals.dbp.push(d);
+    }
+    if (!isNaN(f)) vals.fc.push(f);
+  });
+  const avg = (arr) => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  const avgSbp = avg(vals.sbp), avgDbp = avg(vals.dbp), avgFc = avg(vals.fc);
+  const avgPam = (avgSbp !== null && avgDbp !== null) ? (avgDbp + (avgSbp - avgDbp)/3) : null;
+  const sbpEl = document.getElementById(`avg_sbp_${day}`);
+  const dbpEl = document.getElementById(`avg_dbp_${day}`);
+  const fcEl  = document.getElementById(`avg_fc_${day}`);
+  const pamEl = document.getElementById(`avg_pam_${day}`);
+  if (sbpEl) sbpEl.textContent = avgSbp !== null ? Math.round(avgSbp) : '—';
+  if (dbpEl) dbpEl.textContent = avgDbp !== null ? Math.round(avgDbp) : '—';
+  if (fcEl)  fcEl.textContent  = avgFc  !== null ? Math.round(avgFc)  : '—';
+  if (pamEl) pamEl.textContent = avgPam !== null ? Math.round(avgPam) : '—';
+}
+
+/* ============================================================
+   GRID READER
+============================================================ */
+function readGrid() {
+  const DAYS = getDays();
+  const rows = [];
+  for (let day = 0; day < DAYS; day++) {
+    const row = { day };
+    PERIODS.forEach(p => {
+      const sbpVal = parseFloat(document.getElementById(`sbp_${day}_${p}`)?.value);
+      const dbpVal = parseFloat(document.getElementById(`dbp_${day}_${p}`)?.value);
+      const fcVal  = parseFloat(document.getElementById(`fc_${day}_${p}`)?.value);
+      row[p] = {
+        sbp: isNaN(sbpVal) ? null : sbpVal,
+        dbp: isNaN(dbpVal) ? null : dbpVal,
+        fc:  isNaN(fcVal)  ? null : fcVal,
+        valid:     !isNaN(sbpVal) && !isNaN(dbpVal),
+        physValid: !isNaN(sbpVal) && !isNaN(dbpVal) && dbpVal < sbpVal && sbpVal >= 60 && dbpVal >= 40
+      };
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
+/* ============================================================
+   CALCULATE
+============================================================ */
+function calculate() {
+  const rows = readGrid();
+  const DAYS = getDays();
+  const daysWithData = rows.filter(row => PERIODS.some(p => row[p].valid)).length;
+  const profileKey = getProfile();
+  const target = TARGETS[profileKey] || TARGETS.nom_general;
+
+  const byPeriod = { manana: { sbp:[], dbp:[], fc:[] }, tarde:{ sbp:[], dbp:[], fc:[] }, noche:{ sbp:[], dbp:[], fc:[] } };
+  const allSbp = [], allDbp = [], allFc = [];
+  let clsCnt = { crisis:0, g2:0, g1:0, elev:0, normal:0, low:0 };
+  let tgtOk = 0, tgtAbove = 0, tgtLow = 0;
+  let totalN = 0, validN = 0;
+
+  rows.forEach(row => {
+    PERIODS.forEach(p => {
+      totalN++;
+      const r = row[p];
+      if (!r.valid) return;
+      validN++;
+      if (!r.physValid) return;
+      byPeriod[p].sbp.push(r.sbp);
+      byPeriod[p].dbp.push(r.dbp);
+      if (r.fc !== null) { byPeriod[p].fc.push(r.fc); allFc.push(r.fc); }
+      allSbp.push(r.sbp); allDbp.push(r.dbp);
+      const c = classifyReading(r.sbp, r.dbp);
+      if (c) clsCnt[c.level] = (clsCnt[c.level] || 0) + 1;
+      const isHypo = r.sbp < 90 || r.dbp < 60;
+      if (isHypo) { tgtLow++; }
+      else if (r.sbp < target.sbp && r.dbp < target.dbp) { tgtOk++; }
+      else { tgtAbove++; }
+    });
+  });
+
+  const periodAvg = {};
+  PERIODS.forEach(p => {
+    const mSbp = mean(byPeriod[p].sbp), mDbp = mean(byPeriod[p].dbp);
+    periodAvg[p] = {
+      sbp: mSbp, dbp: mDbp,
+      fc:  mean(byPeriod[p].fc),
+      n:   byPeriod[p].sbp.length,
+      pam: (mSbp !== null && mDbp !== null) ? mDbp + (mSbp - mDbp)/3 : null
+    };
+  });
+
+  const overallSbp = mean(allSbp);
+  const overallDbp = mean(allDbp);
+  const overallPam = (overallSbp !== null && overallDbp !== null) ? overallDbp + (overallSbp - overallDbp)/3 : null;
+
+  const morn = periodAvg['manana'];
+  const aft  = periodAvg['tarde'];
+  const nigh = periodAvg['noche'];
+  const surgeSbp = (morn.sbp !== null && nigh.sbp !== null) ? morn.sbp - nigh.sbp : null;
+
+  let dipperPct = null, dipperStatus = null;
+  const dayVals = [morn.sbp, aft.sbp].filter(x => x !== null);
+  const dayAvg = dayVals.length ? dayVals.reduce((a,b)=>a+b,0)/dayVals.length : null;
+  if (dayAvg !== null && nigh.sbp !== null && dayAvg > 0) {
+    dipperPct = (dayAvg - nigh.sbp) / dayAvg * 100;
+    if (dipperPct > 10) dipperStatus = 'dipper';
+    else               dipperStatus = 'non-dipper'; // incluye <0: insuficiente resolución para "reverse" sin MAPA
+  }
+
+  const sdSbp = sd(allSbp);
+  const overallFc = mean(allFc);
+  const sdFc  = sd(allFc);
+
+  const bpLoad = validN > 0 ? (allSbp.filter((s,i) => s >= target.sbp || allDbp[i] >= target.dbp).length / validN * 100) : 0;
+
+  // ── Sesgos ──────────────────────────────────────────────────────
+  const biasFlags = [];
+  let fcMissingCount = 0;
+  let invalidEntries = [];
+  let partialDays = [];
+  let emptyDays = [];
+
+  rows.forEach(row => {
+    const entered = PERIODS.filter(p => row[p].valid);
+    const physOk  = PERIODS.filter(p => row[p].physValid);
+    if (entered.length === 0) {
+      emptyDays.push(row.day + 1);
+    } else if (physOk.length < entered.length) {
+      PERIODS.forEach(p => {
+        if (row[p].valid && !row[p].physValid) {
+          invalidEntries.push({ day: row.day+1, period: PERIOD_META[p].short,
+            sbp: row[p].sbp, dbp: row[p].dbp });
+        }
+      });
+    }
+    if (entered.length > 0 && entered.length < 3) {
+      partialDays.push({ day: row.day+1, n: physOk.length, entered: entered.length });
+    }
+    PERIODS.forEach(p => {
+      if (row[p].physValid && row[p].fc === null) fcMissingCount++;
+    });
+  });
+
+  if (invalidEntries.length > 0) {
+    biasFlags.push({ sev:'error', msg:
+      `<strong>Error de entrada (DIA ≥ SIS):</strong> ${invalidEntries.map(e =>
+        `D${e.day} ${e.period} (${e.sbp}/${e.dbp})`).join(', ')}.
+       Lecturas excluidas del cálculo. Verificar si hubo inversión de valores al registrar.` });
+  }
+  if (emptyDays.length > 0) {
+    biasFlags.push({ sev:'warn', msg:
+      `<strong>Días sin registro:</strong> D${emptyDays.join(', D')}.
+       Los promedios y la carga tensional no representan esos días.
+       Si la TA fue diferente (mejor adherencia, estrés, etc.) el promedio global puede estar sesgado.` });
+  }
+  if (partialDays.length > 0) {
+    biasFlags.push({ sev:'warn', msg:
+      `<strong>Registro incompleto:</strong> ${partialDays.map(d =>
+        `D${d.day} (${d.n}/3 registros válidos)`).join(', ')}.
+       El promedio diario de esos días se calcula con &lt; 3 horarios — puede no representar el patrón circadiano completo.` });
+  }
+  if (fcMissingCount > 0) {
+    biasFlags.push({ sev:'info', msg:
+      `<strong>FC no registrada en ${fcMissingCount} lectura${fcMissingCount>1?'s':''}.</strong>
+       No se puede evaluar respuesta cronotrópica, variabilidad de FC ni señales de arritmia en esos registros.` });
+  }
+  if (validN < 12) {
+    biasFlags.push({ sev:'warn', msg:
+      `<strong>Lecturas insuficientes (n=${validN}).</strong>
+       El mínimo recomendado para decisión clínica es ≥12 lecturas (AHA/ACC). Los resultados tienen menor confiabilidad estadística.` });
+  }
+  const extremeN = allSbp.filter(v => v >= 250).length;
+  if (extremeN > 0) {
+    biasFlags.push({ sev:'warn', msg:
+      `<strong>${extremeN} lectura${extremeN>1?'s':''} ≥250 mmHg.</strong>
+       Verificar técnica antes de tomar decisión terapéutica. En crisis real el paciente requiere evaluación presencial urgente.` });
+  }
+  const last2empty = rows.slice(-2).every(r => !PERIODS.some(p => r[p].valid));
+  if (last2empty && emptyDays.length > 0) {
+    biasFlags.push({ sev:'info', msg:
+      `<strong>Posible sesgo de abandono:</strong> los últimos días del registro están vacíos.
+       El control en el cierre del período es desconocido. Considerar repetir registro si la decisión es de alto impacto.` });
+  }
+  if (validN > 0 && emptyDays.length === 0 && partialDays.length === 0) {
+    biasFlags.push({ sev:'ok', msg:
+      `Registro completo: sin supuestos de imputación. Los promedios reflejan todas las lecturas registradas.` });
+  }
+
+  const payload = {
+    overallSbp, overallDbp, overallPam, clsCnt, tgtOk, tgtAbove, tgtLow,
+    validN, totalN, DAYS, daysWithData,
+    periodAvg, target, profileKey,
+    surgeSbp, dipperPct, dipperStatus,
+    sdSbp, bpLoad,
+    overallFc, sdFc,
+    allRowsHaveData: rows.map(row => PERIODS.some(p => row[p].valid)),
+    biasFlags
+  };
+
+  document.getElementById('results-section').style.display = '';
+  renderDualClass(payload);
+  renderBanner(payload);
+  renderQuality(payload);
+  renderPeriods(payload);
+  renderTTR(payload);
+  renderPattern(payload);
+  renderBias(payload);
+  renderInterpretation(payload);
+  document.getElementById('results-section')?.scrollIntoView?.({ behavior: 'smooth' });
+}
+
+/* ============================================================
+   RENDER: DUAL CLASSIFICATION
+============================================================ */
+function renderDualClass(p) {
+  const el = document.getElementById('sect-dual-class');
+  if (!el || p.overallSbp === null) return;
+  const nom = classifyNOM030(p.overallSbp, p.overallDbp);
+  const aha = classifyAHA2025(p.overallSbp, p.overallDbp);
+  const esh = classifyESHHome(p.overallSbp, p.overallDbp);
+  el.innerHTML = `
+    <div class="sec-title">Promedio global: ${fmt(p.overallSbp, 0)}/${fmt(p.overallDbp, 0)} mmHg (n=${p.validN} lecturas)</div>
+    <div class="dual-class-grid">
+      <details class="dc-item">
+        <summary>
+          <div class="dc-src">NOM-030-SSA2-2009</div>
+          <div class="dc-val" style="color:${nom ? nom.color : '#64748b'}">${nom ? nom.label : '—'}</div>
+          <div class="dc-sub">Consultorio MX · umbral ≥140/90</div>
+          ${nom ? '<div style="font-size:10px;color:var(--c-muted)">'+nom.sub+'</div>' : ''}
+          <div class="dc-hint">ver detalle</div>
+        </summary>
+        <div class="dc-detail">
+          <strong>Categorías NOM-030-SSA2-2009 (consultorio):</strong><br>
+          Hipotensión &lt;90/60 · Normal &lt;130/85 · Fronteriza 130–139/85–89 · Grado 1 140–159/90–99 ·
+          Grado 2 160–179/100–109 · Grado 3 ≥180/≥110 mmHg.<br>
+          Norma Oficial Mexicana para la prevención, tratamiento y control de la hipertensión arterial
+          sistémica — referencia obligatoria en el expediente clínico institucional en México.
+        </div>
+      </details>
+      <details class="dc-item">
+        <summary>
+          <div class="dc-src">AHA/ACC 2025</div>
+          <div class="dc-val" style="color:${aha ? aha.color : '#64748b'}">${aha ? aha.label : '—'}</div>
+          <div class="dc-sub">Consultorio · umbral ≥130/80</div>
+          ${aha ? '<div style="font-size:10px;color:var(--c-muted)">'+aha.sub+'</div>' : ''}
+          <div class="dc-hint">ver detalle</div>
+        </summary>
+        <div class="dc-detail">
+          <strong>Categorías AHA/ACC 2025 (consultorio, mantiene las de 2017):</strong><br>
+          Normal &lt;120/80 · Elevada 120–129 y &lt;80 · Etapa 1 130–139/80–89 · Etapa 2 ≥140/≥90 ·
+          Crisis &gt;180/&gt;120 mmHg.<br>
+          2025 AHA/ACC Multisociety Guideline. <em>J Am Coll Cardiol.</em> 2025;86(18):1567–1678.
+          Incorpora la calculadora de riesgo PREVENT (umbral ≥7.5% para iniciar/intensificar en Etapa 1).
+        </div>
+      </details>
+      <details class="dc-item">
+        <summary>
+          <div class="dc-src">ESH 2023 (HBPM)</div>
+          <div class="dc-val" style="color:${esh ? esh.color : '#64748b'}">${esh ? esh.label : '—'}</div>
+          <div class="dc-sub">Domiciliaria · umbral ≥135/85</div>
+          ${esh ? '<div style="font-size:10px;color:var(--c-muted)">'+esh.sub+'</div>' : ''}
+          <div class="dc-hint">ver detalle</div>
+        </summary>
+        <div class="dc-detail">
+          <strong>Categorías ESH 2023 — umbral domiciliario (HBPM):</strong><br>
+          Hipotensión &lt;90/60 · Óptima &lt;120/80 · Normal-alta 120–134/80–84 · HTA domiciliaria ≥135/≥85 ·
+          Grado 2 ≥160/≥100 · Crisis &gt;180/&gt;120 mmHg.<br>
+          Mancia G, Kreutz R, Brunström M, et al. 2023 ESH Guidelines. <em>J Hypertens.</em> 2023;41:1874–2071.
+          Es el umbral metodológicamente apropiado para lecturas domiciliarias — el que colorea cada
+          lectura en la tabla de registro.
+        </div>
+      </details>
+    </div>
+    <div class="dc-note">
+      ⚠️ <strong>Nota:</strong> en México, la NOM-030-SSA2-2009 es la referencia normativa aplicable para el expediente clínico institucional; si hay conflicto entre normas para documentación oficial, prevalece la NOM. Tanto NOM-030 como AHA/ACC usan criterios de <em>consultorio</em>; para lecturas <em>domiciliarias</em> el umbral diagnóstico metodológicamente apropiado es ≥135/85 mmHg (ESH 2023), que es el que colorea cada lectura en la tabla de registro. Las tres clasificaciones se muestran en paralelo como referencia comparativa.
+    </div>
+  `;
+}
+
+/* ============================================================
+   RENDER: BANNER + AHA STRIP
+============================================================ */
+function renderBanner(p) {
+  const bannerEl = document.getElementById('sect-banner');
+  const stripEl  = document.getElementById('sect-aha-strip');
+  if (!bannerEl || p.overallSbp === null) return;
+
+  const c = classifyReading(p.overallSbp, p.overallDbp);
+  if (!c) return;
+
+  bannerEl.innerHTML = `
+    <div class="overall-banner" style="background:${c.bg};border:1px solid ${c.color};margin-top:10px;">
+      <div class="ob-val" style="color:${c.color};">${fmt(p.overallSbp, 0)}/${fmt(p.overallDbp, 0)} mmHg</div>
+      <div class="ob-label" style="color:${c.color};">${c.label}</div>
+      ${p.overallPam !== null ? `<div style="font-size:13px;color:#0369a1;font-weight:700;margin-top:4px;">PAM: ${fmt(p.overallPam, 0)} mmHg</div>` : ''}
+      <div class="ob-src">${HOME_THRESHOLD.source} · Meta del perfil: ${p.target.label}</div>
+    </div>
+  `;
+
+  const segments = [
+    { key:'normal', label:'Normal',    bg:'#22c55e' },
+    { key:'elev',   label:'Elevada',   bg:'#d97706' },
+    { key:'g1',     label:'HTA Etapa 1', bg:'#f97316' },
+    { key:'g2',     label:'HTA Etapa 2', bg:'#ef4444' },
+    { key:'crisis', label:'Crisis',    bg:'#991b1b' },
+  ];
+  const ahaCls = classifyAHA2025(p.overallSbp, p.overallDbp);
+  const ahaKey = ahaCls ? (ahaCls.label.includes('Etapa 1')?'g1':ahaCls.label.includes('Etapa 2')?'g2':ahaCls.label.includes('Elevada')?'elev':ahaCls.label.includes('Normal')?'normal':ahaCls.label.includes('Crisis')?'crisis':'normal') : 'normal';
+  stripEl.innerHTML = `
+    <div style="font-size:10px;color:var(--c-muted);margin-top:10px;margin-bottom:4px;">Referencia AHA/ACC 2025 (consultorio):</div>
+    <div class="aha-strip">
+      ${segments.map(s=>`<div class="aha-seg${s.key===ahaKey?' active':''}" style="background:${s.bg};" title="${s.label}">${s.label}</div>`).join('')}
+    </div>
+  `;
+}
+
+/* ============================================================
+   RENDER: CALIDAD DEL REGISTRO
+============================================================ */
+function renderQuality(p) {
+  const el = document.getElementById('sect-quality');
+  if (!el) return;
+  const { validN, totalN, DAYS, daysWithData, allRowsHaveData } = p;
+  const pctValid = totalN > 0 ? (validN / totalN * 100) : 0;
+
+  let qIcon, qLabel, qColor, qBg, qNote;
+  if (pctValid >= 70) {
+    qIcon = '✅'; qLabel = 'Óptimo'; qColor = '#15803d'; qBg = '#f0fdf4';
+    qNote = '≥70% registrado con esquema 3/día — resultado confiable para promedio y carga tensional.';
+  } else if (pctValid >= 50) {
+    qIcon = '🟡'; qLabel = 'Aceptable'; qColor = '#d97706'; qBg = '#fefce8';
+    qNote = '50–69% — interpretar con cautela; verificar si las omisiones son sistemáticas (p. ej., siempre la toma nocturna).';
+  } else {
+    qIcon = '🔴'; qLabel = 'Insuficiente'; qColor = '#991b1b'; qBg = '#fee2e2';
+    qNote = '<50% — resultados poco confiables; revisar captura o ampliar días de registro.';
+  }
+
+  const schemeNote = DAYS === 7
+    ? 'Esquema: 7 días × 3 tomas = 21 lecturas esperadas. Con buena técnica, supera en densidad de datos al protocolo ESH 7-2-2 (28 lecturas, 2 tomas/día). Mínimo clínico AHA/ACC: ≥12 lecturas.'
+    : 'Esquema: 10 días × 3 tomas = 30 lecturas esperadas. Alta fiabilidad para promedio y carga tensional. Protocolo recomendado para casos complejos.';
+
+  const missingDays = [];
+  for (let i = 0; i < DAYS; i++) { if (!allRowsHaveData[i]) missingDays.push(i + 1); }
+
+  el.innerHTML = `
+    <div class="quality-bar" style="background:${qBg};border-color:${qColor};color:${qColor};">
+      <div class="quality-icon">${qIcon}</div>
+      <div>
+        <div class="quality-label">Calidad: ${qLabel}</div>
+        <div class="quality-note" style="color:var(--c-muted);">${qNote}</div>
+      </div>
+    </div>
+    <div class="quality-metrics">
+      <div class="qm-box"><div class="qm-val">${validN}</div><div>Lecturas válidas</div></div>
+      <div class="qm-box"><div class="qm-val">${totalN}</div><div>Esperadas</div></div>
+      <div class="qm-box"><div class="qm-val">${pctValid.toFixed(0)}%</div><div>Completitud</div></div>
+      <div class="qm-box"><div class="qm-val">${daysWithData}/${DAYS}</div><div>Días con datos</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--c-muted);margin-top:8px;">${schemeNote}</div>
+    ${missingDays.length > 0 ? `<div style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;margin-top:6px;">
+      ⚠️ Días sin registro: D${missingDays.join(', D')}. Los promedios y la carga tensional se calculan solo con los días registrados.
+    </div>` : ''}
+    <div style="font-size:10px;color:#6d28d9;background:#f5f3ff;border-radius:6px;padding:7px 10px;margin-top:6px;">
+      💡 <strong>¿Cuándo usar 10 días?</strong> Variabilidad alta (DS SBP &gt;15 mmHg), patrón non-dipper,
+      sospecha de hipotensión episódica, o decisión de cambio de esquema de alto impacto.
+    </div>
+  `;
+}
+
+/* ============================================================
+   RENDER: PERIOD AVERAGES
+============================================================ */
+function renderPeriods(p) {
+  const el = document.getElementById('sect-periods');
+  if (!el) return;
+  const { periodAvg, target } = p;
+
+  const cardsHtml = PERIODS.map(period => {
+    const pa = periodAvg[period];
+    const cls = pa.sbp !== null ? classifyReading(pa.sbp, pa.dbp) : null;
+    const inMeta = pa.sbp !== null && pa.sbp < target.sbp && pa.dbp < target.dbp;
+    return `
+      <div class="pc" style="border-top:3px solid ${cls ? cls.color : 'var(--c-border)'};">
+        <div class="pc-icon">${PERIOD_META[period].icon}</div>
+        <div class="pc-label">${PERIOD_META[period].short}</div>
+        <div class="pc-sbp" style="color:${cls ? cls.color : 'var(--c-muted)'}">
+          ${pa.sbp !== null ? fmt(pa.sbp, 0) : '—'}
+        </div>
+        <div class="pc-dbp">/ ${pa.dbp !== null ? fmt(pa.dbp, 0) : '—'} mmHg</div>
+        <div class="pc-fc">FC: ${pa.fc !== null ? fmt(pa.fc, 0) + ' lpm' : '—'}</div>
+        <div class="pc-pam">PAM: ${pa.pam !== null ? fmt(pa.pam, 0) + ' mmHg' : '—'}</div>
+        <div class="pc-n">${pa.n} lectura${pa.n !== 1 ? 's' : ''} · ${inMeta ? '✅ en meta' : pa.sbp !== null ? '⚠️ fuera de meta' : '—'}</div>
+      </div>
+    `;
+  }).join('');
+
+  el.innerHTML = `<div class="period-cards">${cardsHtml}</div>`;
+}
+
+/* ============================================================
+   RENDER: SUPUESTOS E INFERENCIAS
+============================================================ */
+function renderBias(p) {
+  const el = document.getElementById('sect-bias');
+  if (!el || !p.biasFlags) return;
+  if (p.biasFlags.length === 0) {
+    el.innerHTML = '<p style="color:var(--c-muted);font-size:12px;">Sin alertas de sesgo identificadas.</p>';
+    return;
+  }
+  const icons = { error:'🔴', warn:'🟡', info:'🔵', ok:'✅' };
+  const bgs   = { error:'#fee2e2', warn:'#fffbeb', info:'#eff6ff', ok:'#f0fdf4' };
+  const bords = { error:'#fca5a5', warn:'#fde68a', info:'#bfdbfe', ok:'#bbf7d0' };
+  el.innerHTML = p.biasFlags.map(f => `
+    <div style="background:${bgs[f.sev]};border:1px solid ${bords[f.sev]};border-left:4px solid ${bords[f.sev]};
+      border-radius:var(--radius-sm);padding:9px 12px;margin-bottom:8px;font-size:12px;line-height:1.6;">
+      ${icons[f.sev]} ${f.msg}
+    </div>`).join('');
+}
+
+/* ============================================================
+   RENDER: DISTRIBUCIÓN Y CARGA TENSIONAL
+============================================================ */
+function renderTTR(p) {
+  const el = document.getElementById('sect-ttr');
+  if (!el) return;
+  const { clsCnt, validN, tgtOk, tgtAbove, tgtLow, bpLoad, target } = p;
+
+  const clsRows = [
+    { key:'low',    label:'Hipotensión',   color:'#1d4ed8' },
+    { key:'normal', label:'Normal/Óptima', color:'#22c55e' },
+    { key:'elev',   label:'Elevada',       color:'#d97706' },
+    { key:'g1',     label:'HTA Grado 1',   color:'#f97316' },
+    { key:'g2',     label:'HTA Grado 2',   color:'#ef4444' },
+    { key:'crisis', label:'Crisis',        color:'#991b1b' },
+  ];
+
+  const stackedHtml = clsRows.map(row => {
+    const n = clsCnt[row.key] || 0;
+    const w = validN > 0 ? (n / validN * 100).toFixed(1) : 0;
+    return `<div class="tir-seg" style="width:${w}%;background:${row.color};" title="${row.label}: ${w}%"></div>`;
+  }).join('');
+
+  const rowsHtml = clsRows.map(row => {
+    const n = clsCnt[row.key] || 0;
+    const w = validN > 0 ? (n / validN * 100).toFixed(1) : 0;
+    return `
+      <div class="tir-row">
+        <div class="tir-lbl" style="color:${row.color};">${row.label}</div>
+        <div class="tir-bar-wrap"><div class="tir-bar-fill" style="width:${w}%;background:${row.color};"></div></div>
+        <div class="tir-pct" style="color:${row.color};">${w}%</div>
+        <div class="tir-n">(${n})</div>
+      </div>`;
+  }).join('');
+
+  const pctEnMeta  = validN > 0 ? (tgtOk    / validN * 100).toFixed(1) : '—';
+  const pctSobMeta = validN > 0 ? (tgtAbove / validN * 100).toFixed(1) : '—';
+  const pctHipo    = validN > 0 ? (tgtLow   / validN * 100).toFixed(1) : '—';
+  const loadColor  = bpLoad > 40 ? '#ef4444' : bpLoad > 25 ? '#f97316' : '#22c55e';
+
+  el.innerHTML = `
+    <div class="sec-title">Distribución por categoría · ${validN}/${p.totalN} lecturas analizadas · Meta: ${target.label}</div>
+    <div class="tir-stacked" style="height:20px;border-radius:10px;">${stackedHtml}</div>
+    ${rowsHtml}
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid var(--c-border);">
+      <div class="metric-box" style="background:var(--c-ok-bg);border-color:var(--c-ok);">
+        <div class="mx-label">Lecturas en meta</div>
+        <div class="mx-value" style="font-size:22px;color:#15803d;">${pctEnMeta}%</div>
+        <div class="mx-note">${tgtOk} lecturas &lt;${target.sbp}/${target.dbp} mmHg</div>
+      </div>
+      <div class="metric-box" style="background:var(--c-s1-bg);border-color:var(--c-s1);">
+        <div class="mx-label">Carga tensional</div>
+        <div class="mx-value" style="font-size:22px;color:${loadColor};">${fmt(bpLoad,1)}%</div>
+        <div class="mx-note">Lecturas ≥ meta · ${bpLoad>40?'⚠️ >40%':bpLoad>25?'Moderada':'Baja'}</div>
+      </div>
+      <div class="metric-box" style="background:var(--c-low-bg);border-color:var(--c-low);">
+        <div class="mx-label">Hipotensión</div>
+        <div class="mx-value" style="font-size:22px;color:#1d4ed8;">${pctHipo}%</div>
+        <div class="mx-note">${tgtLow} lecturas &lt;90/60 mmHg</div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--c-muted);margin-top:10px;padding:8px 10px;background:var(--c-bg);border-radius:var(--radius-sm);border-left:3px solid var(--c-primary);">
+      <strong>Carga tensional:</strong> porcentaje de lecturas ≥ meta del perfil. Es un indicador complementario al promedio: en estudios de MAPA de 24h, una carga elevada y sostenida se ha relacionado con mayor daño a órgano blanco (hipertrofia ventricular, albuminuria). Con solo 3 tomas/día en HBPM la evidencia es más limitada que con MAPA — interprétese como <em>marcador exploratorio</em>, no como hallazgo diagnóstico aislado.
+      <strong>Distribución por categoría:</strong> clasificación por lectura según umbral domiciliario ESH 2023 (≥135/85 mmHg).
+    </div>
+  `;
+}
+
+/* ============================================================
+   RENDER: CIRCADIAN PATTERN
+============================================================ */
+function renderPattern(p) {
+  const el = document.getElementById('sect-pattern');
+  if (!el) return;
+  const { surgeSbp, dipperPct, dipperStatus, periodAvg } = p;
+
+  let surgeColor = '#64748b', surgeNote = 'Requiere datos de mañana y noche';
+  if (surgeSbp !== null) {
+    if (surgeSbp > 35) { surgeColor = '#ef4444'; surgeNote = 'Surge marcado >35 mmHg — riesgo CV aumentado (ESH 2023)'; }
+    else if (surgeSbp > 20) { surgeColor = '#f97316'; surgeNote = 'Surge moderado 20–35 mmHg — monitorear'; }
+    else if (surgeSbp < 0)  { surgeColor = '#3b82f6'; surgeNote = 'TA nocturna > matutina — verificar técnica de medición'; }
+    else { surgeColor = '#22c55e'; surgeNote = 'Surge fisiológico <20 mmHg — rango normal'; }
+  }
+
+  let dipLabel = '—', dipColor = '#64748b', dipNote = 'Requiere datos de los 3 horarios';
+  if (dipperStatus === 'dipper') {
+    dipLabel = '✅ Dipper'; dipColor = '#22c55e';
+    dipNote = `Descenso nocturno ${fmt(dipperPct, 1)}% · Patrón protector (>10%)`;
+  } else if (dipperStatus === 'non-dipper') {
+    dipLabel = '⚠️ Non-Dipper'; dipColor = '#f97316';
+    dipNote = `Descenso nocturno ${fmt(dipperPct, 1)}% · Riesgo CV elevado (<10%) · Confirmar con MAPA 24h`;
+  }
+
+  const ppItems = PERIODS.map(prd => {
+    const pa = periodAvg[prd];
+    const pp = (pa.sbp !== null && pa.dbp !== null) ? pa.sbp - pa.dbp : null;
+    const ppColor = pp !== null ? (pp > 60 ? '#ef4444' : pp < 30 ? '#3b82f6' : '#22c55e') : '#94a3b8';
+    return `<div style="text-align:center;">
+      <div style="font-size:11px;color:var(--c-muted);">${PERIOD_META[prd].icon}</div>
+      <div style="font-size:20px;font-weight:800;color:${ppColor};">${pp !== null ? fmt(pp,0) : '—'}</div>
+      <div style="font-size:10px;color:var(--c-muted);">mmHg</div>
+    </div>`;
+  }).join('');
+
+  const mornSbp  = periodAvg['manana'].sbp;
+  const nightSbp = periodAvg['noche'].sbp;
+  const aftSbp   = periodAvg['tarde'].sbp;
+  const gradMN = (mornSbp !== null && nightSbp !== null) ? `${fmt(mornSbp,0)} → ${fmt(nightSbp,0)} mmHg` : '—';
+  const gradMA = (mornSbp !== null && aftSbp !== null)   ? `${fmt(mornSbp,0)} → ${fmt(aftSbp,0)} mmHg` : '—';
+
+  el.innerHTML = `
+    <div class="pat-grid">
+      <div class="pat-card">
+        <div class="pat-label">Surge Matutino (SBP)</div>
+        <div class="pat-value" style="color:${surgeColor};">${surgeSbp !== null ? (surgeSbp >= 0 ? '+' : '') + fmt(surgeSbp,1) + ' mmHg' : '—'}</div>
+        <div class="pat-note">${surgeNote}</div>
+      </div>
+      <div class="pat-card">
+        <div class="pat-label">Patrón Dipper Nocturno</div>
+        <div class="pat-value" style="color:${dipColor};font-size:14px;">${dipLabel}</div>
+        <div class="pat-note">${dipNote}</div>
+      </div>
+      <div class="pat-card">
+        <div class="pat-label">Gradiente Mañana → Noche</div>
+        <div class="pat-value" style="color:var(--c-primary);font-size:15px;">${gradMN}</div>
+        <div class="pat-note">Promedio SBP por horario</div>
+      </div>
+      <div class="pat-card">
+        <div class="pat-label">Gradiente Mañana → Tarde</div>
+        <div class="pat-value" style="color:var(--c-primary);font-size:15px;">${gradMA}</div>
+        <div class="pat-note">Efecto del fármaco en la jornada (vida media)</div>
+      </div>
+      <div class="pat-card" style="grid-column:span 2;">
+        <div class="pat-label">Presión de Pulso por Horario</div>
+        <div style="display:flex;gap:20px;margin-top:8px;">${ppItems}</div>
+        <div class="pat-note" style="margin-top:6px;">PP normal 40–60 mmHg · PP >60: rigidez arterial, riesgo CV aumentado (ESH 2023)</div>
+      </div>
+    </div>
+    <div class="pat-disclaimer">
+      ⚠️ <strong>Limitación metodológica:</strong> el patrón dipper/non-dipper y el surge matutino se estiman aquí como
+      <em>aproximación</em> con 3 puntos domiciliarios (mañana/tarde/noche). El estándar de referencia es MAPA ambulatoria de 24h
+      con &gt;48 mediciones. Si el patrón non-dipper cambia una decisión clínica (p. ej., reposicionamiento
+      de fármacos), solicitar MAPA 24h para confirmación antes de actuar.
+    </div>
+  `;
+}
+
+/* ============================================================
+   RENDER: INTERPRETATION
+============================================================ */
+function renderInterpretation(p) {
+  const { overallSbp, overallDbp, target, tgtOk,
+          validN, surgeSbp, dipperStatus, dipperPct, bpLoad, sdSbp, periodAvg,
+          overallFc, sdFc } = p;
+  const el   = document.getElementById('sect-interpretation');
+  const alEl = document.getElementById('sect-alerts');
+  if (!el || !alEl) return;
+
+  const c = classifyReading(overallSbp, overallDbp);
+  if (!c) { el.innerHTML='<p style="color:var(--c-muted)">Sin datos suficientes.</p>'; return; }
+
+  const points = [];
+  const alerts  = [];
+
+  // --- CONTROL STATUS ---
+  switch (c.level) {
+    case 'normal':
+      points.push(`✅ TA <strong>controlada</strong> (${fmt(overallSbp,0)}/${fmt(overallDbp,0)} mmHg).
+        Dentro de meta ${target.sbp}/${target.dbp}. Mantener esquema actual, reforzar adherencia y estilo de vida.
+        Revisar en 3–6 meses según NOM-030.`); break;
+    case 'elev':
+      points.push(`🟡 TA en <strong>rango elevado</strong> (${fmt(overallSbp,0)}/${fmt(overallDbp,0)} mmHg).
+        Evaluar: adherencia, restricción de sal (&lt;5g NaCl/día), actividad física, estrés, AINE/descongestionantes.
+        Considerar modificación de estilo de vida antes de ajuste farmacológico si presentación reciente. NOM-030.`); break;
+    case 'g1':
+      points.push(`🟠 <strong>HTA Grado 1 / Etapa 1</strong> (${fmt(overallSbp,0)}/${fmt(overallDbp,0)} mmHg).
+        <em>Antes de intensificar:</em> verificar técnica de medición (brazalete adecuado, reposo 5 min, brazo correcto),
+        adherencia al esquema actual, consumo de AINE/descongestionantes/alcohol/sal, apnea del sueño, dolor, ansiedad.
+        Si factores optimizados y persiste fuera de meta en 4–8 semanas: valorar intensificación conforme a
+        cuadro básico institucional y comorbilidades (GPC-CENETEC). AHA/ACC 2025: iniciar/intensificar si riesgo CV
+        ≥7.5% (ecuaciones PREVENT) o daño a órgano blanco.`); break;
+    case 'g2':
+      points.push(`🔴 <strong>HTA Grado 2 / Etapa 2</strong> (${fmt(overallSbp,0)}/${fmt(overallDbp,0)} mmHg).
+        Requiere evaluación de daño a órgano blanco: ECG, creatinina/TFG, microalbuminuria.
+        GPC-CENETEC: combinación de inicio en HTA Grado 2. Combinación preferida: IECA/ARA-II + CCB (amlodipino)
+        ± diurético tiazídico. En DM: IECA/ARA-II de primera línea (nefroprotección). Siempre verificar
+        adherencia y factores secundarios antes de escalar. ESH 2023.`); break;
+    case 'crisis':
+      alerts.push({ type:'crisis', msg:`🆘 <strong>CRISIS HIPERTENSIVA</strong> en promedio del registro
+        (${fmt(overallSbp,0)}/${fmt(overallDbp,0)} mmHg). Diferenciar urgencia vs. emergencia:
+        evaluar síntomas de daño agudo a órgano blanco (cefalea intensa, déficit neurológico, dolor torácico,
+        disnea, alteración visual, oliguria). <br><strong>Emergencia</strong> → derivación inmediata (urgencias hospitalarias).
+        <strong>Urgencia</strong> → intensificación oral + vigilancia 24–72h + seguimiento estrecho.` }); break;
+    case 'low':
+      alerts.push({ type:'info', msg:`🔵 Promedio en <strong>hipotensión</strong>
+        (${fmt(overallSbp,0)}/${fmt(overallDbp,0)} mmHg). Evaluar: sobretratamiento,
+        deshidratación, interacciones (diurético + IECA). Considerar: reducción de dosis, cambio de horario
+        o eliminación de agente redundante. Descartar hipotensión ortostática (medir en decúbito/bipedestación).` }); break;
+  }
+
+  // --- CLASES DE FÁRMACOS (cualquier nivel con HTA) ---
+  if (['g1','g2','crisis'].includes(c.level)) {
+    points.push(`💊 <strong>Clases de primera línea:</strong> <abbr title="Inhibidor de la Enzima Convertidora de Angiotensina">IECA</abbr>/<abbr title="Antagonista del Receptor de Angiotensina II">ARA-II</abbr>, <abbr title="Calcioantagonista">CCB</abbr> (amlodipino) o diurético tiazídico/similar-tiazídico, según comorbilidad — IECA/ARA-II preferido en DM o ERC con albuminuria; CCB o tiazídico son alternativas de primera línea igualmente válidas sin esas comorbilidades.`);
+  }
+
+  // --- DISTRIBUCIÓN Y CARGA TENSIONAL ---
+  const pctEnMeta = validN > 0 ? (tgtOk / validN * 100) : 0;
+  points.push(`📊 <strong>${pctEnMeta.toFixed(0)}% de lecturas en meta</strong>
+    (${tgtOk} de ${validN} lecturas &lt;${target.sbp}/${target.dbp} mmHg · ${target.source}).
+    ${pctEnMeta < 50
+      ? 'La mayoría de lecturas están fuera de meta — sugiere control insuficiente sostenido, no solo episodios aislados.'
+      : pctEnMeta < 75
+        ? 'Control parcial: más de la mitad en meta, pero exposición hemodinámica fuera de rango persiste.'
+        : 'Buen control: mayoría de lecturas dentro de meta.'}
+    Verificar adherencia y técnica de medición antes de ajustar tratamiento (NOM-030-SSA2, AHA/ACC 2025).`);
+
+  if (bpLoad > 40) {
+    points.push(`🔴 <strong>Carga tensional elevada (${fmt(bpLoad,1)}%)</strong>.
+      Una carga sostenida &gt;40% se ha relacionado en estudios de MAPA con mayor daño a órgano blanco (hipertrofia
+      ventricular, albuminuria) independientemente del promedio. En HBPM de 3 tomas/día interprétese como marcador
+      exploratorio — no equivale a un hallazgo de MAPA — pero indica exposición hemodinámica repetida que el
+      promedio puede enmascarar si hay lecturas muy dispersas.`);
+  } else if (bpLoad > 25) {
+    points.push(`🟡 Carga tensional moderada (${fmt(bpLoad,1)}%). Vigilar evolución. Reforzar medidas no farmacológicas.`);
+  }
+
+  // --- DIPPING ---
+  if (dipperStatus === 'non-dipper') {
+    points.push(`🌙 <strong>Patrón <abbr title="Descenso nocturno de PA <10% respecto al promedio diurno">Non-Dipper</abbr></strong> (descenso nocturno ${fmt(dipperPct,1)}%, &lt;10%).
+      Riesgo <abbr title="Cardiovascular">CV</abbr> aumentado: <abbr title="Hipertrofia Ventricular Izquierda">HVI</abbr>, nefropatía, eventos independientes del promedio diurno.
+      Confirmar con <abbr title="Monitoreo Ambulatorio de Presión Arterial">MAPA</abbr> 24h antes de modificar esquema.`);
+  } else if (dipperStatus === 'dipper') {
+    points.push(`🌙 Patrón <strong>Dipper normal</strong> (descenso nocturno ${fmt(dipperPct,1)}%) — patrón protector, riesgo CV reducido.`);
+  }
+
+  // --- SURGE ---
+  if (surgeSbp !== null && surgeSbp > 35) {
+    alerts.push({ type:'warn', msg:`⚠️ <strong>Surge matutino marcado</strong> (+${fmt(surgeSbp,1)} mmHg SBP).
+      Asociado con mayor riesgo de ictus matutino y eventos coronarios. Posible causa: cobertura insuficiente
+      en madrugada. Verificar: ¿el fármaco se toma por la mañana? ¿tiene vida media de 24h?
+      Considerar: IECA/ARA-II o CCB de acción ultralarga (telmisartán, amlodipino).
+      Confirmar con MAPA 24h si determina cambio terapéutico.` });
+  }
+
+  // --- HIPOTENSIÓN EPISÓDICA ---
+  if (p.tgtLow > 0) {
+    const pctLow = validN > 0 ? (p.tgtLow / validN * 100) : 0;
+    if (pctLow > 15) {
+      alerts.push({ type:'info', msg:`🔵 ${pctLow.toFixed(0)}% de lecturas con hipotensión (&lt;90/60).
+        Evaluar: sobretratamiento, deshidratación, hipotensión ortostática, interacciones. Riesgo de caídas
+        especialmente en adulto mayor. Valorar reducción de dosis o simplificación del esquema.` });
+    } else {
+      points.push(`🔵 Episodios aislados de hipotensión (${p.tgtLow} lectura${p.tgtLow>1?'s':''}).
+        Documentar contexto: postprandial, postural, relacionado con medicación o actividad. Vigilar síntomas.`);
+    }
+  }
+
+  // --- FC ---
+  if (overallFc !== null) {
+    if (overallFc > 100) {
+      points.push(`❤️ <strong>Taquicardia</strong> (FC promedio ${fmt(overallFc,0)} lpm).
+        Descartar causas secundarias: anemia, hipertiroidismo, ansiedad, dolor, deshidratación, cafeína.
+        En HTA no controlada, la taquicardia refleja activación simpática — el control de la PA suele normalizarla.
+        Si el esquema incluye CCB dihidropiridínico (amlodipino), verificar taquicardia refleja por vasodilatación.
+        Si persiste FC >100 en reposo: considerar beta-bloqueador (no como antihipertensivo de primera línea,
+        pero útil en HTA + taquicardia / HTA + angina / post-IAM).`);
+    } else if (overallFc < 60) {
+      points.push(`❤️ <strong>Bradicardia</strong> (FC promedio ${fmt(overallFc,0)} lpm).
+        Evaluar: beta-bloqueador o CCB no dihidropiridínico (diltiazem/verapamilo) a dosis excesiva,
+        hipotiroidismo, bloqueo AV. Si es sintomática (mareo, síncope, fatiga): ajustar dosis o cambiar clase.
+        Importante: no combinar beta-bloqueador + diltiazem/verapamilo por riesgo de bloqueo AV.`);
+    } else if (overallFc >= 60 && overallFc <= 80) {
+      points.push(`❤️ FC promedio ${fmt(overallFc,0)} lpm — rango óptimo.
+        En HTA + angina o post-IAM, meta de FC ≤70 lpm con beta-bloqueador.
+        En HTA sin comorbilidades CV: FC entre 60–80 lpm en reposo es fisiológica.`);
+    } else {
+      points.push(`❤️ FC promedio ${fmt(overallFc,0)} lpm — rango normal-alto. Vigilar si aumenta;
+        descartar activación simpática por HTA no controlada, ansiedad o efecto de vasodilatador sin beta-bloqueador.`);
+    }
+    if (sdFc !== null && sdFc > 15) {
+      points.push(`❤️ <strong>Alta variabilidad de FC</strong> (DS = ${fmt(sdFc,1)} lpm).
+        Puede indicar: arritmia (fibrilación auricular — revisar regularidad del pulso en cada toma),
+        medición en diferentes condiciones de esfuerzo o estrés, o fluctuación farmacológica.
+        Si hay irregularidad de pulso: ECG.`);
+    }
+  }
+
+  // --- VARIABILIDAD TA ---
+  if (sdSbp !== null && sdSbp > 15) {
+    points.push(`📉 <strong>Alta variabilidad tensional</strong> (DS SBP = ${fmt(sdSbp,1)} mmHg).
+      La variabilidad visita-a-visita se ha descrito como predictor independiente de eventos CV (Rothwell et al.,
+      <em>Lancet</em> 2010). Causas: técnica de medición inconsistente, adherencia irregular, dolor/estrés, AINE,
+      esquema de acción corta. Considerar combinación fija de acción prolongada.`);
+  }
+
+  // --- VARIACIÓN HORARIA ---
+  const mSbp = periodAvg['manana'].sbp, nSbp = periodAvg['noche'].sbp;
+  if (mSbp !== null && nSbp !== null && Math.abs(mSbp - nSbp) > 20) {
+    points.push(`⏱️ <strong>Variación horaria significativa</strong> (mañana ${fmt(mSbp,0)} vs. noche ${fmt(nSbp,0)} mmHg,
+      Δ ${fmt(Math.abs(mSbp-nSbp),0)} mmHg). Revisar vida media del fármaco y horario de administración.
+      ¿El esquema cubre las 24h? Evaluar si el pico coincide con momento de mayor riesgo CV (6–10 am).`);
+  }
+
+  // --- AJUSTE FARMACOLÓGICO (solo si hay datos suficientes y PA fuera de meta) ──
+  const diasConDatos = p.daysWithData || 0;
+  const oSbp = overallSbp, oDbp = overallDbp;
+
+  if (diasConDatos >= 5 && validN >= 12 && oSbp !== null && (oSbp >= target.sbp || oDbp >= target.dbp)) {
+    const varNote = (sdSbp !== null && sdSbp > 15)
+      ? `<div style="margin-top:5px;">• Variabilidad alta: preferir fármacos de acción prolongada (<abbr title="Calcioantagonista">CCB</abbr>/<abbr title="Antagonista del Receptor de Angiotensina II">ARA-II</abbr> de 24h).</div>` : '';
+    const eshUmbral = (oSbp >= 135 || oDbp >= 85) ? 'Supera umbral domiciliario ≥135/85.' : 'Bajo umbral domiciliario ESH; evaluar contexto.';
+
+    points.push(`<div style="border-top:1px solid var(--c-border);padding-top:10px;margin-top:10px;">
+      <strong style="font-size:12px;color:var(--c-head);">⏱️ Recomendación de Ajuste Farmacológico</strong>
+      <div style="margin-top:8px;font-size:11.5px;line-height:1.7;display:grid;gap:6px;">
+        <div>• <strong>NOM-030-SSA2:</strong> considerar ajuste si apego ≥4–8 sem verificado y causas modificables descartadas. <abbr title="Guía de Práctica Clínica">GPC</abbr>-CENETEC: <abbr title="Inhibidor de la Enzima Convertidora de Angiotensina">IECA</abbr>/<abbr title="Antagonista del Receptor de Angiotensina II">ARA-II</abbr> + <abbr title="Calcioantagonista">CCB</abbr> en <abbr title="Hipertensión Arterial">HTA</abbr> Grado 2.</div>
+        <div>• <strong>AHA/ACC 2025:</strong> PA ≥140/90 → combinación de inicio. PA 130–139/80–89 + riesgo PREVENT ≥7.5% (o <abbr title="Enfermedad Cardiovascular Aterosclerótica">ASCVD</abbr> clínica, DM, ERC) → iniciar/intensificar. Seguimiento 1 mes post-ajuste.</div>
+        <div>• <strong>ESH 2023:</strong> ${eshUmbral} Control post-ajuste cada 1–3 meses hasta meta, luego cada 6 meses.</div>
+        ${varNote}
+      </div>
+    </div>`);
+  }
+
+  // --- NOTA METODOLÓGICA ---
+  alerts.push({ type:'note', msg:`📌 <strong>Limitación:</strong> esta herramienta es de apoyo clínico —
+    no sustituye el juicio médico ni equivale a MAPA 24h (estándar de referencia). Los patrones circadianos calculados
+    aquí son aproximaciones con lecturas domiciliarias. Siempre confirmar hallazgos críticos (non-dipper,
+    surge marcado, variabilidad alta) con MAPA 24h antes de modificar tratamiento.` });
+
+  el.innerHTML = `<ul>${points.map(pt=>'<li>'+pt+'</li>').join('')}</ul>`;
+  alEl.innerHTML = alerts.map(a=>`<div class="alert-box alert-${a.type}">${a.msg}</div>`).join('');
+}
+
+/* ============================================================
+   LOCALSTORAGE
+============================================================ */
+const STORAGE_AVAILABLE = (() => {
+  try {
+    const testKey = '__tensiolab_test__';
+    localStorage.setItem(testKey, '1');
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) { return false; }
+})();
+
+function guardar(clave, valor) {
+  try { localStorage.setItem(clave, JSON.stringify(valor)); return true; }
+  catch (e) { console.warn('localStorage no disponible:', e); return false; }
+}
+function cargar(clave) {
+  try {
+    const item = localStorage.getItem(clave);
+    return item ? { ok: true, data: JSON.parse(item) } : { ok: false, data: null };
+  } catch (e) { return { ok: false, data: null, error: true }; }
+}
+
+function saveData() {
+  const grid = {};
+  const SAVE_DAYS = getDays();
+  for (let day = 0; day < SAVE_DAYS; day++) {
+    PERIODS.forEach(p => {
+      grid[`sbp_${day}_${p}`] = document.getElementById(`sbp_${day}_${p}`)?.value || '';
+      grid[`dbp_${day}_${p}`] = document.getElementById(`dbp_${day}_${p}`)?.value || '';
+      grid[`fc_${day}_${p}`]  = document.getElementById(`fc_${day}_${p}`)?.value || '';
+    });
+  }
+  const ok = guardar('tensiolab_v2', { days: getDays(), profile: getProfile(), grid });
+  alert(ok ? '✅ Datos guardados.' : '❌ No se pudo guardar: el almacenamiento local no está disponible en este navegador/contexto.');
+}
+
+function loadData() {
+  const result = cargar('tensiolab_v2');
+  if (result.error) { alert('❌ El almacenamiento local no está disponible en este navegador/contexto.'); return; }
+  if (!result.ok) { alert('No hay datos guardados.'); return; }
+  const data = result.data;
+  const daysEl = document.getElementById('cfg-days');
+  const profEl = document.getElementById('cfg-profile');
+  if (daysEl && data.days) { daysEl.value = data.days; buildTable(); }
+  if (profEl && data.profile) profEl.value = data.profile;
+  if (data.grid) {
+    for (let day = 0; day < getDays(); day++) {
+      PERIODS.forEach(p => {
+        const sbpEl = document.getElementById(`sbp_${day}_${p}`);
+        const dbpEl = document.getElementById(`dbp_${day}_${p}`);
+        const fcEl  = document.getElementById(`fc_${day}_${p}`);
+        if (sbpEl) sbpEl.value = data.grid[`sbp_${day}_${p}`] || '';
+        if (dbpEl) dbpEl.value = data.grid[`dbp_${day}_${p}`] || '';
+        if (fcEl ) fcEl.value  = data.grid[`fc_${day}_${p}`]  || '';
+      });
+    }
+    document.querySelectorAll('.bp-input').forEach(el => el.dispatchEvent(new Event('input')));
+  }
+  alert('✅ Datos cargados.');
+}
+
+function clearData() {
+  if (!confirm('¿Limpiar todos los datos? Esta acción no se puede deshacer.')) return;
+  const DAYS = getDays();
+  for (let day = 0; day < DAYS; day++) {
+    PERIODS.forEach(p => {
+      const sbpEl = document.getElementById(`sbp_${day}_${p}`);
+      const dbpEl = document.getElementById(`dbp_${day}_${p}`);
+      const fcEl  = document.getElementById(`fc_${day}_${p}`);
+      const pamEl = document.getElementById(`pam_${day}_${p}`);
+      if (sbpEl) { sbpEl.value = ''; sbpEl.className = 'bp-input'; }
+      if (dbpEl) { dbpEl.value = ''; dbpEl.className = 'bp-input'; }
+      if (fcEl)  fcEl.value = '';
+      if (pamEl) pamEl.textContent = '—';
+    });
+    ['sbp','dbp','fc','pam'].forEach(type => {
+      const avgEl = document.getElementById(`avg_${type}_${day}`);
+      if (avgEl) avgEl.textContent = '—';
+    });
+  }
+  document.getElementById('results-section').style.display = 'none';
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  buildTable();
+  updateProfilePreview();
+
+  const daysEl = document.getElementById('cfg-days');
+  if (daysEl) daysEl.addEventListener('change', () => { buildTable(); });
+
+  const profileEl = document.getElementById('cfg-profile');
+  if (profileEl) profileEl.addEventListener('change', () => {
+    // El perfil solo cambia metas terapéuticas (% en meta, carga tensional, recomendación de ajuste),
+    // no la clasificación diagnóstica (NOM-030/AHA/ESH), que es independiente del perfil elegido.
+    updateProfilePreview();
+    const results = document.getElementById('results-section');
+    if (results && results.style.display !== 'none') calculate();
+  });
+
+  const btnCalc  = document.getElementById('btn-calc');
+  const btnSave  = document.getElementById('btn-save');
+  const btnLoad  = document.getElementById('btn-load');
+  const btnPrint = document.getElementById('btn-print');
+  const btnClear = document.getElementById('btn-clear');
+  const btnPatient = document.getElementById('btn-patient');
+
+  if (btnCalc)  btnCalc.addEventListener('click',  calculate);
+  if (btnSave)  btnSave.addEventListener('click',  saveData);
+  if (btnLoad)  btnLoad.addEventListener('click',  loadData);
+  if (btnPrint) btnPrint.addEventListener('click', () => {
+    try { window.print(); }
+    catch (e) { alert('❌ No se pudo abrir la vista de impresión en este entorno. Descarga el archivo y ábrelo directo en tu navegador (Chrome/Edge/Firefox) para imprimir.'); }
+  });
+  if (btnClear) btnClear.addEventListener('click', clearData);
+  if (btnPatient) btnPatient.addEventListener('click', printPatientSheet);
+
+  if (!STORAGE_AVAILABLE) {
+    if (btnSave) { btnSave.disabled = true; btnSave.title = 'Almacenamiento local no disponible en este navegador/contexto'; }
+    if (btnLoad) { btnLoad.disabled = true; btnLoad.title = 'Almacenamiento local no disponible en este navegador/contexto'; }
+  }
+});
+
+/* ============================================================
+   HOJA DE REGISTRO PARA PACIENTE
+============================================================ */
+function printPatientSheet() {
+  const totalDays = getDays();
+  const dias = Array.from({ length: totalDays }, (_, i) => i + 1);
+  const rows = dias.map(d => `
+    <tr>
+      <td class="td-day" rowspan="3">Día ${d}</td>
+      <td class="td-per">🌅 Mañana</td>
+      <td></td><td></td><td></td><td class="td-notes" rowspan="3"></td>
+    </tr>
+    <tr>
+      <td class="td-per">☀️ Tarde</td>
+      <td></td><td></td><td></td>
+    </tr>
+    <tr>
+      <td class="td-per">🌙 Noche</td>
+      <td></td><td></td><td></td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Monitoreo TA · Hoja de Registro</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 12px; color: #000;
+         padding: 14mm 14mm 10mm; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 17px; font-weight: 800; text-align: center; margin-bottom: 12px; }
+  .instruct { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px;
+              background: #fafafa; margin-bottom: 14px; }
+  .instruct h3 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .instruct ol { padding-left: 18px; }
+  .instruct li { margin-bottom: 3px; line-height: 1.5; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #ede9f8; font-size: 11px; font-weight: 700; padding: 7px 6px;
+       border: 1.5px solid #888; text-align: center; }
+  td { border: 1px solid #999; padding: 5px 6px; text-align: center; min-height: 26px; }
+  .td-day { background: #f5f3ff; font-weight: 700; font-size: 13px; width: 52px;
+            border: 1.5px solid #888; }
+  .td-per { text-align: left; font-size: 11px; font-weight: 600; color: #444;
+            padding-left: 10px; width: 90px; }
+  .td-meas { width: 68px; min-height: 28px; }
+  .td-notes { width: 130px; border-left: 1.5px solid #888; }
+  .footer { margin-top: 14px; font-size: 10px; color: #555; text-align: center;
+            border-top: 1px solid #ccc; padding-top: 8px; }
+  @media print { body { padding: 8mm 10mm; } }
+</style>
+</head>
+<body>
+<h1>🩺 Monitoreo de Tensión Arterial</h1>
+
+<div class="instruct">
+  <h3>📋 Instrucciones para cada medición:</h3>
+  <ol>
+    <li>Repose <strong>sentado 5 minutos</strong> antes de medir. Espalda apoyada, pies en el piso.</li>
+    <li>Evite café, tabaco, ejercicio, medicamentos y comida abundante 30 min antes.</li>
+    <li>Coloque el brazalete a la altura del corazón, brazo izquierdo (o el indicado por su médico).</li>
+    <li>Permanezca <strong>en silencio y quieto</strong> durante toda la medición.</li>
+    <li>Registre los 3 valores: <strong>SIS</strong> (número mayor) · <strong>DIA</strong> (número menor) · <strong>FC</strong> (pulso).</li>
+    <li><strong>Mañana:</strong> al despertar, antes de desayunar y de tomar su medicamento. &nbsp;
+        <strong>Tarde:</strong> 2–3 h después de comer. &nbsp;
+        <strong>Noche:</strong> antes de acostarse.</li>
+  </ol>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Día</th>
+      <th>Horario</th>
+      <th class="td-meas">SIS<br><span style="font-weight:400;font-size:10px;">(mmHg)</span></th>
+      <th class="td-meas">DIA<br><span style="font-weight:400;font-size:10px;">(mmHg)</span></th>
+      <th class="td-meas">FC<br><span style="font-weight:400;font-size:10px;">(lpm)</span></th>
+      <th class="td-notes">Notas / Síntomas</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+
+<div class="footer">
+  Traiga esta hoja llena en su próxima consulta · Los datos serán capturados por su médico para análisis
+</div>
+</body>
+</html>`;
+
+  let win;
+  try { win = window.open('', '_blank', 'width=860,height=720'); }
+  catch (e) { win = null; }
+  if (!win) {
+    alert('❌ El navegador (o la vista previa) bloqueó la ventana emergente. Permite ventanas emergentes para este sitio, o descarga el archivo y ábrelo directo en tu navegador (Chrome/Edge/Firefox).');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { try { win.print(); } catch (e) { /* no-op: el usuario aún puede imprimir manualmente desde la ventana abierta */ } }, 400);
+}
+
+/*
+CHANGELOG v2.2 (ajustes por feedback del usuario):
+- [REMOVED] Tarjeta "Tendencia de SIS por Día y Horario" (gráfica SVG) — eliminada por completo:
+  función renderChart(), contenedor HTML, cómputo de dailyTrend, CSS .chart-wrap/.trend-svg.
+- [REMOVED] Tarjeta "Variabilidad de TA y FC" — eliminada por completo: función renderVariability(),
+  contenedor HTML, cómputos de sdDbp/cvSbp/min-max SBP-DBP-FC que solo alimentaban esa tarjeta, CSS
+  .metric-grid y .mx-unit (huérfanos tras el retiro).
+- [REMOVED] Pie de "Referencias normativas y guías utilizadas" — eliminado por completo: div .ref-footer
+  y su CSS asociado.
+- [REMOVED] Nota de "Horario de toma" (mañana/tarde/noche) en Interpretación Clínica — se quitó por no
+  tener significancia clínica demostrada (TIME 2022, BedMed 2025); se mantiene solo la recomendación de
+  clase de fármaco (IECA/ARA-II/CCB/tiazídico).
+- [UI] Las 3 tarjetas de clasificación dual (NOM-030/AHA-ACC/ESH) son ahora <details> expandibles con
+  un indicador tipo viñeta verde ("ver detalle"); cerradas por defecto, el contenido visible por defecto
+  es idéntico al de antes — el detalle adicional (tabla de categorías completa + cita) solo aparece al
+  hacer clic.
+- [FIX] Corregido el sub-label de la categoría "Normal" en classifyNOM030 (decía <120/80 sin corresponder
+  al umbral real usado por el código, que es <130/85).
+
+CHANGELOG v2.1 (reescritura de coherencia):
+- [FIX] Eliminado código huérfano: skipDay1(), getDateLabel(), pct() sin uso — funciones muertas removidas.
+- [FIX] Eliminado el selector de contexto no usado (CONTEXTS con 4 entradas, 3 muertas) — la app siempre
+  registra en domicilio, así que se usa un único umbral HOME_THRESHOLD (ESH 2023, ≥135/85).
+- [FIX] Reintegradas 3 secciones que existían en JS/CSS pero no tenían contenedor en el HTML
+  (Calidad del Registro, Variabilidad, Tendencia/gráfica) — ya no son código muerto.
+- [FIX] Corregido bug: guardar()/saveData() siempre mostraba "✅ guardado" aunque localStorage fallara;
+  ahora se propaga el resultado real y se detecta disponibilidad de localStorage al cargar la página.
+- [FIX] Hoja de registro para paciente ahora usa los días configurados (antes siempre imprimía 7).
+- [CLINICAL] AHA/ACC 2025: verificado contra la guía publicada (JACC 2025;86(18):1567–1678); corregido
+  el umbral de riesgo PREVENT citado (10% → 7.5%, el valor real de la guía).
+- [CLINICAL] ERC/KDIGO 2024: aclarado que KDIGO recomienda SBP<120 con medición estandarizada (evidencia
+  2B, debatida); <130/80 se deja explícito como meta práctica para HBPM, no como "la" recomendación KDIGO.
+- [CLINICAL] Embarazo: fuente actualizada de "ACOG 2019" a "ACOG/SMFM 2022 (CHAP trial, NEJM)", que es la
+  guía vigente; eliminada la afirmación no verificada de meta <130/80 en preeclampsia severa (la severa
+  requiere manejo urgente para salir de rango de crisis, no un descenso programado).
+- [CLINICAL] "Carga tensional >40%" reformulada como marcador exploratorio (matiz que pedía la revisión),
+  ya no atribuida a una cita puntual no verificable con precisión.
+- [CLINICAL] Añadido pie de referencias verificadas (NOM-030, NOM-007, AHA/ACC 2025, ESH 2023, ADA
+  2025-2026, KDIGO 2024, CHAP/ACOG, HYVET) y nota de jerarquía normativa (NOM prevalece en documentación
+  oficial en México; ESH 2023 es el umbral metodológicamente correcto para lecturas domiciliarias).
+- Mantiene los estándares del ecosistema: 'use strict', DOMContentLoaded, addEventListener, sin handlers
+  inline, localStorage con try/catch, color primario #5C3D8F.
+*/
+</script>
+</body>
+</html>
